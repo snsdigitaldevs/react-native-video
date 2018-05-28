@@ -558,7 +558,7 @@ static NSString *const timedMetadata = @"timedMetadata";
 
 - (void)setSeek:(float)seekTime
 {
-  int timeScale = 10000;
+  int timeScale = 1000;
 
   AVPlayerItem *item = _player.currentItem;
   if (item && item.status == AVPlayerItemStatusReadyToPlay) {
@@ -567,7 +567,7 @@ static NSString *const timedMetadata = @"timedMetadata";
     CMTime cmSeekTime = CMTimeMakeWithSeconds(seekTime, timeScale);
     CMTime current = item.currentTime;
     // TODO figure out a good tolerance level
-    CMTime tolerance = CMTimeMake(1000, timeScale);
+    CMTime tolerance = kCMTimeZero;
     BOOL wasPaused = _paused;
 
     if (CMTimeCompare(current, cmSeekTime) != 0) {

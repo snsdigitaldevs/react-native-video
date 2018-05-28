@@ -131,7 +131,7 @@ public class ReactVideoViewManager extends SimpleViewManager<ReactVideoView> {
 
     @ReactProp(name = PROP_SEEK)
     public void setSeek(final ReactVideoView videoView, final float seek) {
-        videoView.seekTo(Math.round(seek * 1000.0f));
+        videoView.seekTo(seek * 1000.0f);
     }
 
     @ReactProp(name = PROP_RATE)
