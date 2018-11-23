@@ -215,7 +215,7 @@ public class ReactExoplayerViewManager extends ViewGroupManager<ReactExoplayerVi
         videoView.setFullscreen(fullscreen);
     }
 
-    @ReactProp(name = PROP_USE_TEXTURE_VIEW, defaultBoolean = true)
+    @ReactProp(name = PROP_USE_TEXTURE_VIEW, defaultBoolean = false)
     public void setUseTextureView(final ReactExoplayerView videoView, final boolean useTextureView) {
         videoView.setUseTextureView(useTextureView);
     }

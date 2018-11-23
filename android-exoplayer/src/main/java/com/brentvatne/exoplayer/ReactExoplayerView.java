@@ -98,7 +98,7 @@ class ReactExoplayerView extends FrameLayout implements
 
     private DataSource.Factory mediaDataSourceFactory;
     private SimpleExoPlayer player;
-    private DefaultTrackSelector trackSelector;
+    private MappingTrackSelector trackSelector;
     private boolean playerNeedsSource;
 
     private int resumeWindow;
@@ -109,7 +109,6 @@ class ReactExoplayerView extends FrameLayout implements
     private boolean isPaused;
     private boolean isBuffering;
     private float rate = 1f;
-    private float audioVolume = 1f;
 
     private int minBufferMs = DefaultLoadControl.DEFAULT_MIN_BUFFER_MS;
     private int maxBufferMs = DefaultLoadControl.DEFAULT_MAX_BUFFER_MS;
@@ -203,10 +202,7 @@ class ReactExoplayerView extends FrameLayout implements
     @Override
     protected void onDetachedFromWindow() {
         super.onDetachedFromWindow();
-        /* We want to be able to continue playing audio when switching tabs.
-         * Leave this here in case it causes issues.
-         */
-        // stopPlayback();
+        stopPlayback();
     }
 
     // LifecycleEventListener implementation
@@ -455,10 +451,10 @@ class ReactExoplayerView extends FrameLayout implements
         if (player != null) {
             if (focusChange == AudioManager.AUDIOFOCUS_LOSS_TRANSIENT_CAN_DUCK) {
                 // Lower the volume
-                player.setVolume(audioVolume * 0.8f);
+                player.setVolume(0.8f);
             } else if (focusChange == AudioManager.AUDIOFOCUS_GAIN) {
                 // Raise it back to normal
-                player.setVolume(audioVolume * 1);
+                player.setVolume(1);
             }
         }
     }
@@ -537,12 +533,12 @@ class ReactExoplayerView extends FrameLayout implements
         TrackGroupArray groups = info.getTrackGroups(index);
         for (int i = 0; i < groups.length; ++i) {
             Format format = groups.get(i).getFormat(0);
-            WritableMap audioTrack = Arguments.createMap();
-            audioTrack.putInt("index", i);
-            audioTrack.putString("title", format.id != null ? format.id : "");
-            audioTrack.putString("type", format.sampleMimeType);
-            audioTrack.putString("language", format.language != null ? format.language : "");
-            audioTracks.pushMap(audioTrack);
+            WritableMap textTrack = Arguments.createMap();
+            textTrack.putInt("index", i);
+            textTrack.putString("title", format.id != null ? format.id : "");
+            textTrack.putString("type", format.sampleMimeType);
+            textTrack.putString("language", format.language != null ? format.language : "");
+            audioTracks.pushMap(textTrack);
         }
         return audioTracks;
     }
@@ -778,13 +774,8 @@ class ReactExoplayerView extends FrameLayout implements
             type = "default";
         }
 
-        DefaultTrackSelector.Parameters disableParameters = trackSelector.getParameters()
-                .buildUpon()
-                .setRendererDisabled(rendererIndex, true)
-                .build();
-
         if (type.equals("disabled")) {
-            trackSelector.setParameters(disableParameters);
+            trackSelector.setSelectionOverride(rendererIndex, groups, null);
             return;
         } else if (type.equals("language")) {
             for (int i = 0; i < groups.length; ++i) {
@@ -807,12 +798,17 @@ class ReactExoplayerView extends FrameLayout implements
                 trackIndex = value.asInt();
             }
         } else { // default
-            if (rendererIndex == C.TRACK_TYPE_TEXT && Util.SDK_INT > 18 && groups.length > 0) {
-                // Use system settings if possible
-                CaptioningManager captioningManager
-                        = (CaptioningManager)themedReactContext.getSystemService(Context.CAPTIONING_SERVICE);
-                if (captioningManager != null && captioningManager.isEnabled()) {
-                    trackIndex = getTrackIndexForDefaultLocale(groups);
+            if (rendererIndex == C.TRACK_TYPE_TEXT) { // Use system settings if possible
+                int sdk = android.os.Build.VERSION.SDK_INT;
+                if (sdk > 18 && groups.length > 0) {
+                    CaptioningManager captioningManager
+                            = (CaptioningManager)themedReactContext.getSystemService(Context.CAPTIONING_SERVICE);
+                    if (captioningManager != null && captioningManager.isEnabled()) {
+                        trackIndex = getTrackIndexForDefaultLocale(groups);
+                    }
+                } else {
+                    trackSelector.setSelectionOverride(rendererIndex, groups, null);
+                    return;
                 }
             } else if (rendererIndex == C.TRACK_TYPE_AUDIO) {
                 trackIndex = getTrackIndexForDefaultLocale(groups);
@@ -820,17 +816,14 @@ class ReactExoplayerView extends FrameLayout implements
         }
 
         if (trackIndex == C.INDEX_UNSET) {
-            trackSelector.setParameters(disableParameters);
+            trackSelector.clearSelectionOverrides(rendererIndex);
             return;
         }
 
-        DefaultTrackSelector.Parameters selectionParameters = trackSelector.getParameters()
-                .buildUpon()
-                .setRendererDisabled(rendererIndex, false)
-                .setSelectionOverride(rendererIndex, groups,
-                        new DefaultTrackSelector.SelectionOverride(trackIndex, 0))
-                .build();
-        trackSelector.setParameters(selectionParameters);
+        MappingTrackSelector.SelectionOverride override
+                = new MappingTrackSelector.SelectionOverride(
+                new FixedTrackSelection.Factory(), trackIndex, 0);
+        trackSelector.setSelectionOverride(rendererIndex, groups, override);
     }
 
     private int getTrackIndexForDefaultLocale(TrackGroupArray groups) {
@@ -876,17 +869,15 @@ class ReactExoplayerView extends FrameLayout implements
     }
 
     public void setMutedModifier(boolean muted) {
-        audioVolume = muted ? 0.f : 1.f;
         if (player != null) {
-            player.setVolume(audioVolume);
+            player.setVolume(muted ? 0 : 1);
         }
     }
 
 
     public void setVolumeModifier(float volume) {
-        audioVolume = volume;
         if (player != null) {
-            player.setVolume(audioVolume);
+            player.setVolume(volume);
         }
     }
 
