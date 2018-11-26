@@ -7,6 +7,7 @@ import android.media.AudioManager;
 import android.net.Uri;
 import android.os.Handler;
 import android.os.Message;
+import android.os.PowerManager;
 import android.text.TextUtils;
 import android.util.Log;
 import android.view.View;
@@ -135,6 +136,8 @@ class ReactExoplayerView extends FrameLayout implements
     // React
     private final ThemedReactContext themedReactContext;
     private final AudioManager audioManager;
+    private final PowerManager mPowerManager;
+    private final PowerManager.WakeLock wl;
     private final AudioBecomingNoisyReceiver audioBecomingNoisyReceiver;
 
     private final Handler progressHandler = new Handler() {
@@ -166,7 +169,9 @@ class ReactExoplayerView extends FrameLayout implements
         audioManager = (AudioManager) context.getSystemService(Context.AUDIO_SERVICE);
         themedReactContext.addLifecycleEventListener(this);
         audioBecomingNoisyReceiver = new AudioBecomingNoisyReceiver(themedReactContext);
+        mPowerManager = (PowerManager)themedReactContext.getSystemService(Context.POWER_SERVICE);
 
+        wl = mPowerManager.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "react-native-video" + ":" + TAG);
         initializePlayer();
     }
 
@@ -227,6 +232,7 @@ class ReactExoplayerView extends FrameLayout implements
 
     @Override
     public void onHostDestroy() {
+        releaseWakeLock();
         stopPlayback();
     }
 
@@ -253,6 +259,7 @@ class ReactExoplayerView extends FrameLayout implements
 
             PlaybackParameters params = new PlaybackParameters(rate, 1f);
             player.setPlaybackParameters(params);
+            acquireWakeLock();
         }
         if (playerNeedsSource && srcUri != null) {
             ArrayList<MediaSource> mediaSourceList = buildTextSources();
@@ -335,6 +342,7 @@ class ReactExoplayerView extends FrameLayout implements
             player = null;
             trackSelector = null;
         }
+        releaseWakeLock();
         progressHandler.removeMessages(SHOW_PROGRESS);
         themedReactContext.removeLifecycleEventListener(this);
         audioBecomingNoisyReceiver.removeListener();
@@ -387,6 +395,17 @@ class ReactExoplayerView extends FrameLayout implements
         }
         if (!disableFocus) {
             setKeepScreenOn(true);
+        }
+    }
+
+
+    private void acquireWakeLock() {
+        wl.acquire();
+    }
+
+    private void releaseWakeLock () {
+        if (wl !=null && wl.isHeld()) {
+            wl.release();
         }
     }
 
