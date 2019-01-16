@@ -254,7 +254,8 @@ public class MusicControlModule extends ReactContextBaseJavaModule implements Co
 
         notification.setCustomNotificationIcon(notificationIcon);
 
-        if(metadata.hasKey("artwork") && !TextUtils.isEmpty(metadata.getString("artwork"))) {
+        if( (metadata.hasKey("artwork") && !TextUtils.isEmpty(metadata.getString("artwork")))
+                || getCurrentActivity() != null && !getCurrentActivity().isFinishing()) {
             String artwork = null;
 
             if(metadata.getType("artwork") == ReadableType.Map) {
