@@ -155,7 +155,7 @@ class ReactExoplayerView extends FrameLayout implements
                         msg = obtainMessage(SHOW_PROGRESS);
                         removeMessages(SHOW_PROGRESS);
                         sendMessageDelayed(msg, Math.round(mProgressUpdateInterval));
-                        Log.d(TAG,"SHOW_PROGRESS:=== START ");
+                        Log.d(TAG,"SHOW_PROGRESS:=== START " + player);
                         Log.d(TAG,"SHOW_PROGRESS:getAudioAttributes "+ player.getAudioAttributes());
                         Log.d(TAG,"SHOW_PROGRESS:getAudioFormat "+ player.getAudioFormat());
                         Log.d(TAG,"SHOW_PROGRESS:getBufferedPercentage "+ player.getBufferedPercentage());
@@ -171,7 +171,7 @@ class ReactExoplayerView extends FrameLayout implements
                         Log.d(TAG,"SHOW_PROGRESS:getPlayWhenReady "+ player.getPlayWhenReady());
                         Log.d(TAG,"SHOW_PROGRESS:=== END ");
                     } else if (player != null) {
-                        Log.d(TAG,"SHOW_PROGRESS:player != null START ");
+                        Log.d(TAG,"SHOW_PROGRESS:player != null START " + player);
                         Log.d(TAG,"SHOW_PROGRESS:getAudioAttributes "+ player.getAudioAttributes());
                         Log.d(TAG,"SHOW_PROGRESS:getAudioFormat "+ player.getAudioFormat());
                         Log.d(TAG,"SHOW_PROGRESS:getBufferedPercentage "+ player.getBufferedPercentage());
