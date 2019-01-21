@@ -171,6 +171,8 @@ public class MusicControlModule extends ReactContextBaseJavaModule implements Co
 
     @ReactMethod
     public void stopControl() {
+        Intent myIntent = new Intent(context, MusicControlNotification.NotificationService.class);
+        context.stopService(myIntent);
         if (!init)
             return;
 
@@ -318,7 +320,12 @@ public class MusicControlModule extends ReactContextBaseJavaModule implements Co
 
     @ReactMethod
     synchronized public void updatePlayback(ReadableMap info) {
-        init();
+        // init();
+        if (state == null || volume == null || pb == null || session == null || notification == null
+                || md == null || nb == null){
+            Log.e(TAG,"updatePlayback did not work, somethingwrong..");
+            return;
+        }
 
         long updateTime;
         long elapsedTime;
@@ -368,7 +375,11 @@ public class MusicControlModule extends ReactContextBaseJavaModule implements Co
 
     @ReactMethod
     synchronized public void enableControl(String control, boolean enable, ReadableMap options) {
-        init();
+        if ( session == null || session == null || pb == null ) {
+            Log.e(TAG,"enableControl after stop, return..");
+            return;
+        }
+        // init();
 
         Map<String, Integer> skipOptions = new HashMap<String, Integer>();
 

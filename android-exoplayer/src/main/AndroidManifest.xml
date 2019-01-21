@@ -3,4 +3,5 @@
     <application>
         <service android:stopWithTask="true" android:name="com.lockscreen.MusicControlNotification$NotificationService" />
     </application>
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE"/>
 </manifest>
