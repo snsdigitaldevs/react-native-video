@@ -83,6 +83,7 @@ class ReactExoplayerView extends FrameLayout implements
         MetadataOutput {
 
     private static final String TAG = "ReactExoplayerView";
+    private static final boolean DEBUG = false;
 
     private static final DefaultBandwidthMeter BANDWIDTH_METER = new DefaultBandwidthMeter();
     private static final CookieManager DEFAULT_COOKIE_MANAGER;
@@ -141,8 +142,6 @@ class ReactExoplayerView extends FrameLayout implements
     private final Handler progressHandler = new Handler() {
         @Override
         public void handleMessage(Message msg) {
-            // TODO need remove this log
-            Log.d(TAG," SHOW_PROGRESS coming");
             switch (msg.what) {
                 case SHOW_PROGRESS:
                     if (player != null
@@ -155,37 +154,9 @@ class ReactExoplayerView extends FrameLayout implements
                         msg = obtainMessage(SHOW_PROGRESS);
                         removeMessages(SHOW_PROGRESS);
                         sendMessageDelayed(msg, Math.round(mProgressUpdateInterval));
-                        Log.d(TAG,"SHOW_PROGRESS:=== START " + player);
-                        Log.d(TAG,"SHOW_PROGRESS:getAudioAttributes "+ player.getAudioAttributes());
-                        Log.d(TAG,"SHOW_PROGRESS:getAudioFormat "+ player.getAudioFormat());
-                        Log.d(TAG,"SHOW_PROGRESS:getBufferedPercentage "+ player.getBufferedPercentage());
-                        Log.d(TAG,"SHOW_PROGRESS:getBufferedPosition "+ player.getBufferedPosition());
-                        Log.d(TAG,"SHOW_PROGRESS:getContentPosition "+ player.getContentPosition());
-                        Log.d(TAG,"SHOW_PROGRESS:getCurrentTimeline "+ player.getCurrentTimeline());
-                        Log.d(TAG,"SHOW_PROGRESS:getCurrentPosition "+ player.getCurrentPosition());
-                        Log.d(TAG,"SHOW_PROGRESS:getDuration "+ player.getDuration());
-                        Log.d(TAG,"SHOW_PROGRESS:isLoading "+ player.isLoading());
-                        Log.d(TAG,"SHOW_PROGRESS:getVolume "+ player.getVolume());
-                        Log.d(TAG,"SHOW_PROGRESS:getPlaybackParameters "+ player.getPlaybackParameters());
-                        Log.d(TAG,"SHOW_PROGRESS:getPlaybackState "+ player.getPlaybackState());
-                        Log.d(TAG,"SHOW_PROGRESS:getPlayWhenReady "+ player.getPlayWhenReady());
-                        Log.d(TAG,"SHOW_PROGRESS:=== END ");
+                        debug("===");
                     } else if (player != null) {
-                        Log.d(TAG,"SHOW_PROGRESS:player != null START " + player);
-                        Log.d(TAG,"SHOW_PROGRESS:getAudioAttributes "+ player.getAudioAttributes());
-                        Log.d(TAG,"SHOW_PROGRESS:getAudioFormat "+ player.getAudioFormat());
-                        Log.d(TAG,"SHOW_PROGRESS:getBufferedPercentage "+ player.getBufferedPercentage());
-                        Log.d(TAG,"SHOW_PROGRESS:getBufferedPosition "+ player.getBufferedPosition());
-                        Log.d(TAG,"SHOW_PROGRESS:getContentPosition "+ player.getContentPosition());
-                        Log.d(TAG,"SHOW_PROGRESS:getCurrentTimeline "+ player.getCurrentTimeline());
-                        Log.d(TAG,"SHOW_PROGRESS:getCurrentPosition "+ player.getCurrentPosition());
-                        Log.d(TAG,"SHOW_PROGRESS:getDuration "+ player.getDuration());
-                        Log.d(TAG,"SHOW_PROGRESS:isLoading "+ player.isLoading());
-                        Log.d(TAG,"SHOW_PROGRESS:getVolume "+ player.getVolume());
-                        Log.d(TAG,"SHOW_PROGRESS:getPlaybackParameters "+ player.getPlaybackParameters());
-                        Log.d(TAG,"SHOW_PROGRESS:getPlaybackState "+ player.getPlaybackState());
-                        Log.d(TAG,"SHOW_PROGRESS:getPlayWhenReady "+ player.getPlayWhenReady());
-                        Log.d(TAG,"SHOW_PROGRESS:player != null END ");
+                        debug("player != null");
                     }else {
                         Log.e(TAG,"SHOW_PROGRESS: something wrong..");
                     }
@@ -193,6 +164,25 @@ class ReactExoplayerView extends FrameLayout implements
             }
         }
     };
+
+    private void debug(String debugInfo) {
+        if (!DEBUG) return;
+        Log.d(TAG,"SHOW_PROGRESS: START > " + debugInfo +"<" );
+        Log.d(TAG,"SHOW_PROGRESS:getAudioAttributes "+ player.getAudioAttributes());
+        Log.d(TAG,"SHOW_PROGRESS:getAudioFormat "+ player.getAudioFormat());
+        Log.d(TAG,"SHOW_PROGRESS:getBufferedPercentage "+ player.getBufferedPercentage());
+        Log.d(TAG,"SHOW_PROGRESS:getBufferedPosition "+ player.getBufferedPosition());
+        Log.d(TAG,"SHOW_PROGRESS:getContentPosition "+ player.getContentPosition());
+        Log.d(TAG,"SHOW_PROGRESS:getCurrentTimeline "+ player.getCurrentTimeline());
+        Log.d(TAG,"SHOW_PROGRESS:getCurrentPosition "+ player.getCurrentPosition());
+        Log.d(TAG,"SHOW_PROGRESS:getDuration "+ player.getDuration());
+        Log.d(TAG,"SHOW_PROGRESS:isLoading "+ player.isLoading());
+        Log.d(TAG,"SHOW_PROGRESS:getVolume "+ player.getVolume());
+        Log.d(TAG,"SHOW_PROGRESS:getPlaybackParameters "+ player.getPlaybackParameters());
+        Log.d(TAG,"SHOW_PROGRESS:getPlaybackState "+ player.getPlaybackState());
+        Log.d(TAG,"SHOW_PROGRESS:getPlayWhenReady "+ player.getPlayWhenReady());
+        Log.d(TAG,"SHOW_PROGRESS: END > " + debugInfo +"<" );
+    }
 
     public ReactExoplayerView(ThemedReactContext context) {
         super(context);
