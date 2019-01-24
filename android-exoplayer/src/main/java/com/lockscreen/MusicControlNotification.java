@@ -83,7 +83,7 @@ public class MusicControlNotification {
         }
     }
 
-    public Notification prepareNotification(NotificationCompat.Builder builder, boolean isPlaying) {
+    public synchronized Notification prepareNotification(NotificationCompat.Builder builder, boolean isPlaying) {
         // Add the buttons
         builder.mActions.clear();
         if(previous != null) builder.addAction(previous);
@@ -108,8 +108,9 @@ public class MusicControlNotification {
         // Open the app when the notification is clicked
         String packageName = context.getPackageName();
         Intent openApp = context.getPackageManager().getLaunchIntentForPackage(packageName);
-        builder.setContentIntent(PendingIntent.getActivity(context, 0, openApp, 0));
-
+        if (openApp != null) {
+            builder.setContentIntent(PendingIntent.getActivity(context, 0, openApp, 0));
+        }
         // Remove notification
         Intent remove = new Intent(REMOVE_NOTIFICATION);
         remove.putExtra(PACKAGE_NAME, context.getApplicationInfo().packageName);
@@ -190,7 +191,8 @@ public class MusicControlNotification {
         public void onCreate() {
             super.onCreate();
 
-            if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) { // TODO up to o
+            if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.O &&
+                    MusicControlModule.INSTANCE.notification != null) { // TODO up to o
                 Notification notification = MusicControlModule.INSTANCE.notification.prepareNotification(MusicControlModule.INSTANCE.nb,false);
                 startForeground(NOTIFICATION_ID, notification);
             } else {
