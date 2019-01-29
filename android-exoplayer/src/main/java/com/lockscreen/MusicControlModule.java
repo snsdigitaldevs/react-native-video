@@ -171,8 +171,10 @@ public class MusicControlModule extends ReactContextBaseJavaModule implements Co
 
     @ReactMethod
     public void stopControl() {
-        Intent myIntent = new Intent(context, MusicControlNotification.NotificationService.class);
-        context.stopService(myIntent);
+        Intent myIntent = new Intent();
+        myIntent.setComponent(new ComponentName("com.thoughtworks.pimsleur.unlimited.development",
+                "com.lockscreen.MusicControlNotification$NotificationService"));
+        if (getReactApplicationContext() != null ) getReactApplicationContext().stopService(myIntent);
         if (!init)
             return;
 
@@ -300,7 +302,7 @@ public class MusicControlModule extends ReactContextBaseJavaModule implements Co
                             md.putBitmap(MediaMetadataCompat.METADATA_KEY_ART, theBitmap);
                             // session.setMetadata(md.build());
                         }
-                        if (nb != null) {
+                        if (nb != null && notification != null) {
                             nb.setLargeIcon(theBitmap);
                             notification.show(nb, isPlaying);
                         }
@@ -322,7 +324,7 @@ public class MusicControlModule extends ReactContextBaseJavaModule implements Co
     synchronized public void updatePlayback(ReadableMap info) {
         // init();
         if (state == null || volume == null || pb == null || session == null || notification == null
-                || md == null || nb == null){
+                || nb == null){
             Log.e(TAG,"updatePlayback did not work, somethingwrong..");
             return;
         }
@@ -475,6 +477,7 @@ public class MusicControlModule extends ReactContextBaseJavaModule implements Co
             case ComponentCallbacks2.TRIM_MEMORY_RUNNING_CRITICAL:
 
                 Log.e(TAG, "Control resources are being removed due to system's low memory (Level: " + level + ")");
+
                 destroy();
                 break;
         }
