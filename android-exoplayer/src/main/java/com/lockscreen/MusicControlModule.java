@@ -1,6 +1,5 @@
 package com.lockscreen;
 
-
 import android.app.NotificationManager;
 import android.app.NotificationChannel;
 import android.content.ComponentCallbacks2;
@@ -98,17 +97,20 @@ public class MusicControlModule extends ReactContextBaseJavaModule implements Co
 
     @RequiresApi(Build.VERSION_CODES.O)
     private void createChannel(ReactApplicationContext context) {
-        NotificationManager mNotificationManager = (NotificationManager) context.getSystemService(Context.NOTIFICATION_SERVICE);
+        NotificationManager mNotificationManager = (NotificationManager) context
+                .getSystemService(Context.NOTIFICATION_SERVICE);
 
-        NotificationChannel mChannel = new NotificationChannel(CHANNEL_ID, "Media playback", NotificationManager.IMPORTANCE_LOW);
+        NotificationChannel mChannel = new NotificationChannel(CHANNEL_ID, "Media playback",
+                NotificationManager.IMPORTANCE_LOW);
         mChannel.setDescription("Media playback controls");
         mChannel.setShowBadge(false);
         mChannel.setLockscreenVisibility(NotificationCompat.VISIBILITY_PUBLIC);
         mNotificationManager.createNotificationChannel(mChannel);
     }
 
-    public void init() {
-        if (init) return;
+    private void init() {
+        if (init)
+            return;
 
         INSTANCE = this;
 
@@ -117,12 +119,12 @@ public class MusicControlModule extends ReactContextBaseJavaModule implements Co
         ComponentName compName = new ComponentName(context, MusicControlReceiver.class);
 
         session = new MediaSessionCompat(context, "MusicControl", compName, null);
-        session.setFlags(MediaSessionCompat.FLAG_HANDLES_MEDIA_BUTTONS |
-                MediaSessionCompat.FLAG_HANDLES_TRANSPORT_CONTROLS);
+        session.setFlags(
+                MediaSessionCompat.FLAG_HANDLES_MEDIA_BUTTONS | MediaSessionCompat.FLAG_HANDLES_TRANSPORT_CONTROLS);
         session.setCallback(new MusicControlListener(context));
 
         volume = new MusicControlListener.VolumeListener(context, true, 100, 100);
-        if(remoteVolume) {
+        if (remoteVolume) {
             session.setPlaybackToRemote(volume);
         } else {
             session.setPlaybackToLocal(AudioManager.STREAM_MUSIC);
@@ -137,7 +139,8 @@ public class MusicControlModule extends ReactContextBaseJavaModule implements Co
         }
         nb = new NotificationCompat.Builder(context, CHANNEL_ID);
 
-        if (!(Build.MANUFACTURER.toLowerCase(Locale.getDefault()).contains("huawei") && Build.VERSION.SDK_INT < Build.VERSION_CODES.M)) {
+        if (!(Build.MANUFACTURER.toLowerCase(Locale.getDefault()).contains("huawei")
+                && Build.VERSION.SDK_INT < Build.VERSION_CODES.M)) {
             nb.setStyle(new MediaStyle().setMediaSession(session.getSessionToken()));
         }
 
@@ -156,7 +159,7 @@ public class MusicControlModule extends ReactContextBaseJavaModule implements Co
 
         Intent myIntent = new Intent(context, MusicControlNotification.NotificationService.class);
 
-        if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.O){
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             context.startForegroundService(myIntent);
 
         } else {
@@ -174,7 +177,8 @@ public class MusicControlModule extends ReactContextBaseJavaModule implements Co
         Intent myIntent = new Intent();
         myIntent.setComponent(new ComponentName("com.thoughtworks.pimsleur.unlimited.development",
                 "com.lockscreen.MusicControlNotification$NotificationService"));
-        if (getReactApplicationContext() != null ) getReactApplicationContext().stopService(myIntent);
+        if (getReactApplicationContext() != null)
+            getReactApplicationContext().stopService(myIntent);
         if (!init)
             return;
 
@@ -196,6 +200,7 @@ public class MusicControlModule extends ReactContextBaseJavaModule implements Co
         md = null;
         pb = null;
         nb = null;
+        theBitmap = null;
 
         init = false;
     }
@@ -219,26 +224,24 @@ public class MusicControlModule extends ReactContextBaseJavaModule implements Co
         String genre = metadata.hasKey("genre") ? metadata.getString("genre") : null;
         String description = metadata.hasKey("description") ? metadata.getString("description") : null;
         String date = metadata.hasKey("date") ? metadata.getString("date") : null;
-        long duration = metadata.hasKey("duration") ? (long)(metadata.getDouble("duration") * 1000) : 0;
+        long duration = metadata.hasKey("duration") ? (long) (metadata.getDouble("duration") * 1000) : 0;
         int notificationColor = metadata.hasKey("color") ? metadata.getInt("color") : NotificationCompat.COLOR_DEFAULT;
         String notificationIcon = metadata.hasKey("notificationIcon") ? metadata.getString("notificationIcon") : null;
 
         RatingCompat rating;
-        if(metadata.hasKey("rating")) {
-            if(ratingType == RatingCompat.RATING_PERCENTAGE) {
-                rating = RatingCompat.newPercentageRating((float)metadata.getDouble("rating"));
-            } else if(ratingType == RatingCompat.RATING_HEART) {
+        if (metadata.hasKey("rating")) {
+            if (ratingType == RatingCompat.RATING_PERCENTAGE) {
+                rating = RatingCompat.newPercentageRating((float) metadata.getDouble("rating"));
+            } else if (ratingType == RatingCompat.RATING_HEART) {
                 rating = RatingCompat.newHeartRating(metadata.getBoolean("rating"));
-            } else if(ratingType == RatingCompat.RATING_THUMB_UP_DOWN) {
+            } else if (ratingType == RatingCompat.RATING_THUMB_UP_DOWN) {
                 rating = RatingCompat.newThumbRating(metadata.getBoolean("rating"));
             } else {
-                rating = RatingCompat.newStarRating(ratingType, (float)metadata.getDouble("rating"));
+                rating = RatingCompat.newStarRating(ratingType, (float) metadata.getDouble("rating"));
             }
         } else {
             rating = RatingCompat.newUnratedRating(ratingType);
         }
-
-
 
         md.putText(MediaMetadataCompat.METADATA_KEY_TITLE, title);
         md.putText(MediaMetadataCompat.METADATA_KEY_ARTIST, artist);
@@ -258,59 +261,23 @@ public class MusicControlModule extends ReactContextBaseJavaModule implements Co
 
         notification.setCustomNotificationIcon(notificationIcon);
 
-        if( (metadata.hasKey("artwork") && !TextUtils.isEmpty(metadata.getString("artwork")))
-                || getCurrentActivity() != null && !getCurrentActivity().isFinishing()) {
+        if ((metadata.hasKey("artwork") && !TextUtils.isEmpty(metadata.getString("artwork")))
+                && (getCurrentActivity() != null && !getCurrentActivity().isFinishing())) {
             String artwork = null;
+            FetchPicture fetchPictureThread = new FetchPicture();
 
-            if(metadata.getType("artwork") == ReadableType.Map) {
+            if (metadata.getType("artwork") == ReadableType.Map) {
                 artwork = metadata.getMap("artwork").getString("uri");
             } else {
                 artwork = metadata.getString("artwork");
             }
 
             final String artworkUrl = artwork;
-            Log.d(TAG,"artworkUrl = " + artworkUrl);
-            new AsyncTask<Void, Void, Void>() {
-                @Override
-                protected Void doInBackground(Void... params) {
-                    // Looper.prepare();
-                    if (Looper.myLooper() == null)
-                    {
-                        Looper.prepare();
-                    }
-                    try {
-                        theBitmap = Glide.with(getCurrentActivity())
-                                .asBitmap()
-                                .load(artworkUrl)
-                                .submit(1024,597)
-                                .get();
-                    } catch (final ExecutionException e) {
-                        Log.e(TAG, e.getMessage());
-                    } catch (final InterruptedException e) {
-                        Log.e(TAG, e.getMessage());
-                    }
-                    return null;
-                }
-                @Override
-                protected void onPostExecute(Void dummy) {
-                    if (null != theBitmap) {
-                        // The full bitmap should be available here
-                        // image.setImageBitmap(theBitmap);
-                        Log.d(TAG, "Image loaded");
-
-                        if (md != null) {
-                            md.putBitmap(MediaMetadataCompat.METADATA_KEY_ART, theBitmap);
-                            // session.setMetadata(md.build());
-                        }
-                        if (nb != null && notification != null) {
-                            nb.setLargeIcon(theBitmap);
-                            notification.show(nb, isPlaying);
-                        }
-                    };
-                }
-            }.execute();
+            Log.d(TAG, "artworkUrl = " + artworkUrl+",fetchPictureThread.getStatus()="+fetchPictureThread.getStatus());
+            Log.d(TAG, "artworkUrl =>"+ metadata.getString("artwork")+"<>"+TextUtils.isEmpty(metadata.getString("artwork")));
+            fetchPictureThread.execute(artworkUrl);
         } else {
-            Log.d(TAG,"to set color..");
+            Log.d(TAG, "to set color..");
             md.putBitmap(MediaMetadataCompat.METADATA_KEY_ART, null);
             nb.setLargeIcon(null);
         }
@@ -323,23 +290,24 @@ public class MusicControlModule extends ReactContextBaseJavaModule implements Co
     @ReactMethod
     synchronized public void updatePlayback(ReadableMap info) {
         // init();
-        if (state == null || volume == null || pb == null || session == null || notification == null
-                || nb == null){
-            Log.e(TAG,"updatePlayback did not work, somethingwrong..");
+        if (state == null || volume == null || pb == null || session == null || notification == null || nb == null) {
+            Log.e(TAG, "updatePlayback did not work, somethingwrong..");
+            dump();
             return;
         }
 
         long updateTime;
         long elapsedTime;
-        long bufferedTime = info.hasKey("bufferedTime") ? (long)(info.getDouble("bufferedTime") * 1000) : state.getBufferedPosition();
-        float speed = info.hasKey("speed") ? (float)info.getDouble("speed") : state.getPlaybackSpeed();
+        long bufferedTime = info.hasKey("bufferedTime") ? (long) (info.getDouble("bufferedTime") * 1000)
+                : state.getBufferedPosition();
+        float speed = info.hasKey("speed") ? (float) info.getDouble("speed") : state.getPlaybackSpeed();
         int pbState = info.hasKey("state") ? info.getInt("state") : state.getState();
         int maxVol = info.hasKey("maxVolume") ? info.getInt("maxVolume") : volume.getMaxVolume();
         int vol = info.hasKey("volume") ? info.getInt("volume") : volume.getCurrentVolume();
         ratingType = info.hasKey("rating") ? info.getInt("rating") : ratingType;
 
-        if(info.hasKey("elapsedTime")) {
-            elapsedTime = (long)(info.getDouble("elapsedTime") * 1000);
+        if (info.hasKey("elapsedTime")) {
+            elapsedTime = (long) (info.getDouble("elapsedTime") * 1000);
             updateTime = SystemClock.elapsedRealtime();
         } else {
             elapsedTime = state.getPosition();
@@ -351,14 +319,15 @@ public class MusicControlModule extends ReactContextBaseJavaModule implements Co
         pb.setActions(controls);
 
         isPlaying = pbState == PlaybackStateCompat.STATE_PLAYING || pbState == PlaybackStateCompat.STATE_BUFFERING;
-        if(session.isActive()) notification.show(nb, isPlaying);
+        if (session.isActive())
+            notification.show(nb, isPlaying);
 
         state = pb.build();
         session.setPlaybackState(state);
 
         session.setRatingType(ratingType);
 
-        if(remoteVolume) {
+        if (remoteVolume) {
             session.setPlaybackToRemote(volume.create(null, maxVol, vol));
         } else {
             session.setPlaybackToLocal(AudioManager.STREAM_MUSIC);
@@ -367,91 +336,97 @@ public class MusicControlModule extends ReactContextBaseJavaModule implements Co
 
     @ReactMethod
     synchronized public void resetNowPlaying() {
-        if(!init) return;
+        if (!init)
+            return;
 
         md = new MediaMetadataCompat.Builder();
 
-        if (notification != null) notification.hide();
+        if (notification != null)
+            notification.hide();
         session.setActive(false);
     }
 
     @ReactMethod
     synchronized public void enableControl(String control, boolean enable, ReadableMap options) {
-        if ( session == null || session == null || pb == null ) {
-            Log.e(TAG,"enableControl after stop, return..");
+        if (session == null || notification == null || pb == null) {
+            Log.e(TAG, "enableControl after stop, return..");
+            dump();
             return;
         }
         // init();
 
         Map<String, Integer> skipOptions = new HashMap<String, Integer>();
 
-        long controlValue;
-        switch(control) {
-            case "skipForward":
-                if (options.hasKey("interval"))
-                    skipOptions.put("skipForward", options.getInt("interval"));
-                controlValue = PlaybackStateCompat.ACTION_FAST_FORWARD;
-                break;
-            case "skipBackward":
-                if (options.hasKey("interval"))
-                    skipOptions.put("skipBackward", options.getInt("interval"));
-                controlValue = PlaybackStateCompat.ACTION_REWIND;
-                break;
-            case "nextTrack":
-                controlValue = PlaybackStateCompat.ACTION_SKIP_TO_NEXT;
-                break;
-            case "previousTrack":
-                controlValue = PlaybackStateCompat.ACTION_SKIP_TO_PREVIOUS;
-                break;
-            case "play":
-                controlValue = PlaybackStateCompat.ACTION_PLAY;
-                break;
-            case "pause":
-                controlValue = PlaybackStateCompat.ACTION_PAUSE;
-                break;
-            case "togglePlayPause":
-                controlValue = PlaybackStateCompat.ACTION_PLAY_PAUSE;
-                break;
-            case "stop":
-                controlValue = PlaybackStateCompat.ACTION_STOP;
-                break;
-            case "seek":
-                controlValue = PlaybackStateCompat.ACTION_SEEK_TO;
-                break;
-            case "setRating":
-                controlValue = PlaybackStateCompat.ACTION_SET_RATING;
-                break;
-            case "volume":
-                volume = volume.create(enable, null, null);
-                if(remoteVolume) session.setPlaybackToRemote(volume);
-                return;
-            case "remoteVolume":
-                remoteVolume = enable;
-                if(enable) {
-                    session.setPlaybackToRemote(volume);
-                } else {
-                    session.setPlaybackToLocal(AudioManager.STREAM_MUSIC);
-                }
-                return;
-            case "closeNotification":
-                if(enable) {
-                    if (options.hasKey("when")) {
-                       if ("always".equals(options.getString("when"))) {
-                           this.notificationClose = notificationClose.ALWAYS;
-                       }else if ("paused".equals(options.getString("when"))) {
-                           this.notificationClose = notificationClose.PAUSED;
-                       }else {
-                           this.notificationClose = notificationClose.NEVER;
-                       }
+        long controlValue=0l;
+        switch (control) {
+        case "skipForward":
+            if (options.hasKey("interval"))
+                skipOptions.put("skipForward", options.getInt("interval"));
+            controlValue = PlaybackStateCompat.ACTION_FAST_FORWARD;
+            break;
+        case "skipBackward":
+            if (options.hasKey("interval"))
+                skipOptions.put("skipBackward", options.getInt("interval"));
+            controlValue = PlaybackStateCompat.ACTION_REWIND;
+            break;
+        case "nextTrack":
+            controlValue = PlaybackStateCompat.ACTION_SKIP_TO_NEXT;
+            break;
+        case "previousTrack":
+            controlValue = PlaybackStateCompat.ACTION_SKIP_TO_PREVIOUS;
+            break;
+        case "play":
+            Log.d(TAG,"play..");
+            controlValue = PlaybackStateCompat.ACTION_PLAY;
+            break;
+        case "pause":
+            Log.d(TAG,"setPause..");
+            controlValue = PlaybackStateCompat.ACTION_PAUSE;
+            break;
+        case "togglePlayPause":
+            controlValue = PlaybackStateCompat.ACTION_PLAY_PAUSE;
+            break;
+        case "stop":
+            controlValue = PlaybackStateCompat.ACTION_STOP;
+            break;
+        case "seek":
+            controlValue = PlaybackStateCompat.ACTION_SEEK_TO;
+            break;
+        case "setRating":
+            controlValue = PlaybackStateCompat.ACTION_SET_RATING;
+            break;
+        case "volume":
+            volume = volume.create(enable, null, null);
+            if (remoteVolume)
+                session.setPlaybackToRemote(volume);
+            return;
+        case "remoteVolume":
+            remoteVolume = enable;
+            if (enable) {
+                session.setPlaybackToRemote(volume);
+            } else {
+                session.setPlaybackToLocal(AudioManager.STREAM_MUSIC);
+            }
+            return;
+        case "closeNotification":
+            if (enable) {
+                if (options.hasKey("when")) {
+                    if ("always".equals(options.getString("when"))) {
+                        this.notificationClose = notificationClose.ALWAYS;
+                    } else if ("paused".equals(options.getString("when"))) {
+                        this.notificationClose = notificationClose.PAUSED;
+                    } else {
+                        this.notificationClose = notificationClose.NEVER;
                     }
-                    return;
                 }
-            default:
-                // Unknown control type, let's just ignore it
                 return;
+            }
+        default:
+            // Unknown control type, let's just ignore it
+            return;
         }
 
-        if(enable) {
+        if (enable) {
             controls |= controlValue;
         } else {
             controls &= ~controlValue;
@@ -464,22 +439,34 @@ public class MusicControlModule extends ReactContextBaseJavaModule implements Co
         session.setPlaybackState(state);
     }
 
+    private void dump(){
+        Log.i(TAG,">DUMP START<");
+        if (session !=null ) Log.d(TAG,"session = "+ session);
+        if (notification !=null )Log.d(TAG,"notification = "+ notification);
+        if (pb !=null ) Log.d(TAG,"pb = "+ pb);
+        if (nb !=null ) Log.d(TAG,"nb = "+ nb);
+        if (state !=null ) Log.d(TAG,"state = "+ state);
+        if (volume !=null ) Log.d(TAG,"volume = "+ volume);
+        Log.i(TAG,">DUMP END<");
+    }
+
     @Override
     public void onTrimMemory(int level) {
-        switch(level) {
-            // Trims memory when it reaches a moderate level and the session is inactive
-            case ComponentCallbacks2.TRIM_MEMORY_MODERATE:
-            case ComponentCallbacks2.TRIM_MEMORY_RUNNING_MODERATE:
-                if(session.isActive()) break;
-
-                // Trims memory when it reaches a critical level
-            case ComponentCallbacks2.TRIM_MEMORY_COMPLETE:
-            case ComponentCallbacks2.TRIM_MEMORY_RUNNING_CRITICAL:
-
-                Log.e(TAG, "Control resources are being removed due to system's low memory (Level: " + level + ")");
-
-                destroy();
+        switch (level) {
+        // Trims memory when it reaches a moderate level and the session is inactive
+        case ComponentCallbacks2.TRIM_MEMORY_MODERATE:
+        case ComponentCallbacks2.TRIM_MEMORY_RUNNING_MODERATE:
+            if (session.isActive())
                 break;
+
+            // Trims memory when it reaches a critical level
+        case ComponentCallbacks2.TRIM_MEMORY_COMPLETE:
+        case ComponentCallbacks2.TRIM_MEMORY_RUNNING_CRITICAL:
+
+            Log.e(TAG, "Control resources are being removed due to system's low memory (Level: " + level + ")");
+
+            destroy();
+            break;
         }
     }
 
@@ -495,8 +482,43 @@ public class MusicControlModule extends ReactContextBaseJavaModule implements Co
     }
 
     public enum NotificationClose {
-        ALWAYS,
-        PAUSED,
-        NEVER
+        ALWAYS, PAUSED, NEVER
+    }
+
+    private class FetchPicture extends AsyncTask<String, Void, Void>{
+        @Override
+        protected Void doInBackground(String ... params) {
+            String localworkUrl = params[0];
+            if (Looper.myLooper() == null) {
+                Looper.prepare();
+            }
+            try {
+                theBitmap = Glide.with(getCurrentActivity()).asBitmap().load(localworkUrl).submit(1024, 597).get();
+            } catch (final ExecutionException e) {
+                Log.e(TAG, e.getMessage());
+            } catch (final InterruptedException e) {
+                Log.e(TAG, e.getMessage());
+            }
+            return null;
+        }
+
+        @Override
+        protected void onPostExecute(Void dummy) {
+            if (null != theBitmap) {
+                // The full bitmap should be available here
+                // image.setImageBitmap(theBitmap);
+                Log.d(TAG, "Image loaded");
+
+                if (md != null) {
+                    md.putBitmap(MediaMetadataCompat.METADATA_KEY_ART, theBitmap);
+                    // session.setMetadata(md.build());
+                }
+                if (nb != null && notification != null) {
+                    nb.setLargeIcon(theBitmap);
+                    notification.show(nb, isPlaying);
+                }
+            }
+        }
+
     }
 }
