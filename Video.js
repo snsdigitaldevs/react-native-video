@@ -200,6 +200,9 @@ export default class Video extends Component {
       uri = `file://${uri}`;
     }
 
+    if (!uri) {
+        console.warn('Trying to load empty source.');
+    }
     const isNetwork = !!(uri && uri.match(/^https?:/));
     const isAsset = !!(uri && uri.match(/^(assets-library|file|content|ms-appx|ms-appdata):/));
 

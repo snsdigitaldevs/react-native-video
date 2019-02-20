@@ -10,8 +10,6 @@ import android.content.Context;
 import android.content.res.Configuration;
 import android.graphics.Bitmap;
 import android.media.AudioManager;
-import android.os.AsyncTask;
-import android.os.Looper;
 import android.os.SystemClock;
 import android.os.Build;
 import android.support.annotation.RequiresApi;
@@ -24,6 +22,13 @@ import android.support.v4.media.app.NotificationCompat.MediaStyle;
 import android.text.TextUtils;
 import android.util.Log;
 
+import com.facebook.common.executors.UiThreadImmediateExecutorService;
+import com.facebook.common.references.CloseableReference;
+import com.facebook.datasource.DataSource;
+import com.facebook.drawee.backends.pipeline.Fresco;
+import com.facebook.imagepipeline.datasource.BaseBitmapDataSubscriber;
+import com.facebook.imagepipeline.image.CloseableImage;
+import com.facebook.imagepipeline.request.ImageRequest;
 import com.facebook.react.bridge.ReactApplicationContext;
 import com.facebook.react.bridge.ReactContextBaseJavaModule;
 import com.facebook.react.bridge.ReactMethod;
@@ -32,9 +37,8 @@ import com.facebook.react.bridge.ReadableType;
 import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
-import java.util.concurrent.ExecutionException;
 
-import com.bumptech.glide.Glide;
+import javax.annotation.Nullable;
 
 public class MusicControlModule extends ReactContextBaseJavaModule implements ComponentCallbacks2 {
     private static final String TAG = MusicControlModule.class.getSimpleName();
@@ -66,7 +70,6 @@ public class MusicControlModule extends ReactContextBaseJavaModule implements Co
     public static final String CHANNEL_ID = "react-native-music-control";
 
     public static final int NOTIFICATION_ID = 100;
-    private Bitmap theBitmap = null;
 
     public MusicControlModule(ReactApplicationContext context) {
         super(context);
@@ -200,7 +203,6 @@ public class MusicControlModule extends ReactContextBaseJavaModule implements Co
         md = null;
         pb = null;
         nb = null;
-        theBitmap = null;
 
         init = false;
     }
@@ -261,10 +263,8 @@ public class MusicControlModule extends ReactContextBaseJavaModule implements Co
 
         notification.setCustomNotificationIcon(notificationIcon);
 
-        if ((metadata.hasKey("artwork") && !TextUtils.isEmpty(metadata.getString("artwork")))
-                && (getCurrentActivity() != null && !getCurrentActivity().isFinishing())) {
+        if ((metadata.hasKey("artwork") && !TextUtils.isEmpty(metadata.getString("artwork")))) {
             String artwork = null;
-            FetchPicture fetchPictureThread = new FetchPicture();
 
             if (metadata.getType("artwork") == ReadableType.Map) {
                 artwork = metadata.getMap("artwork").getString("uri");
@@ -273,9 +273,28 @@ public class MusicControlModule extends ReactContextBaseJavaModule implements Co
             }
 
             final String artworkUrl = artwork;
-            Log.d(TAG, "artworkUrl = " + artworkUrl+",fetchPictureThread.getStatus()="+fetchPictureThread.getStatus());
-            Log.d(TAG, "artworkUrl =>"+ metadata.getString("artwork")+"<>"+TextUtils.isEmpty(metadata.getString("artwork")));
-            fetchPictureThread.execute(artworkUrl);
+
+            ImageRequest imageRequest = ImageRequest.fromUri(artworkUrl);
+            DataSource<CloseableReference<CloseableImage>> dataSource = Fresco.getImagePipeline().fetchDecodedImage(imageRequest, null);
+            dataSource.subscribe(new BaseBitmapDataSubscriber() {
+                @Override
+                protected void onNewResultImpl(@Nullable Bitmap bitmap) {
+                    if (md != null) {
+                        md.putBitmap(MediaMetadataCompat.METADATA_KEY_ART, bitmap);
+                        // session.setMetadata(md.build());
+                    }
+                    if (nb != null && notification != null) {
+                        nb.setLargeIcon(bitmap);
+                        notification.show(nb, isPlaying);
+                    }
+                }
+                @Override
+                protected void onFailureImpl(DataSource<CloseableReference<CloseableImage>> dataSource) {
+                    Log.d(TAG, "loadfailed to set color..");
+                    md.putBitmap(MediaMetadataCompat.METADATA_KEY_ART, null);
+                    nb.setLargeIcon(null);
+                }
+            }, UiThreadImmediateExecutorService.getInstance());
         } else {
             Log.d(TAG, "to set color..");
             md.putBitmap(MediaMetadataCompat.METADATA_KEY_ART, null);
@@ -483,42 +502,5 @@ public class MusicControlModule extends ReactContextBaseJavaModule implements Co
 
     public enum NotificationClose {
         ALWAYS, PAUSED, NEVER
-    }
-
-    private class FetchPicture extends AsyncTask<String, Void, Void>{
-        @Override
-        protected Void doInBackground(String ... params) {
-            String localworkUrl = params[0];
-            if (Looper.myLooper() == null) {
-                Looper.prepare();
-            }
-            try {
-                theBitmap = Glide.with(getCurrentActivity()).asBitmap().load(localworkUrl).submit(1024, 597).get();
-            } catch (final ExecutionException e) {
-                Log.e(TAG, e.getMessage());
-            } catch (final InterruptedException e) {
-                Log.e(TAG, e.getMessage());
-            }
-            return null;
-        }
-
-        @Override
-        protected void onPostExecute(Void dummy) {
-            if (null != theBitmap) {
-                // The full bitmap should be available here
-                // image.setImageBitmap(theBitmap);
-                Log.d(TAG, "Image loaded");
-
-                if (md != null) {
-                    md.putBitmap(MediaMetadataCompat.METADATA_KEY_ART, theBitmap);
-                    // session.setMetadata(md.build());
-                }
-                if (nb != null && notification != null) {
-                    nb.setLargeIcon(theBitmap);
-                    notification.show(nb, isPlaying);
-                }
-            }
-        }
-
     }
 }

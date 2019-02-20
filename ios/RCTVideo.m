@@ -373,7 +373,10 @@ static int const RCTVideoUnset = -1;
   bool isAsset = [RCTConvert BOOL:[source objectForKey:@"isAsset"]];
   NSString *uri = [source objectForKey:@"uri"];
   NSString *type = [source objectForKey:@"type"];
-  
+  if (!uri || [uri isEqualToString:@""]) {
+    NSLog(@"Could not find video URL in source '%@'", source);
+  }
+
   AVURLAsset *asset;
   NSMutableDictionary *assetOptions = [[NSMutableDictionary alloc] init];
 
