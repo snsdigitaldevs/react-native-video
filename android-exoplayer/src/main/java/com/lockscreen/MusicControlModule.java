@@ -8,7 +8,9 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.Context;
 import android.content.res.Configuration;
+import android.content.res.Resources;
 import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.media.AudioManager;
 import android.os.SystemClock;
 import android.os.Build;
@@ -19,9 +21,9 @@ import android.support.v4.media.session.MediaSessionCompat;
 import android.support.v4.media.session.PlaybackStateCompat;
 import android.support.v4.app.NotificationCompat;
 import android.support.v4.media.app.NotificationCompat.MediaStyle;
-import android.text.TextUtils;
 import android.util.Log;
 
+import com.brentvatne.react.R;
 import com.facebook.common.executors.UiThreadImmediateExecutorService;
 import com.facebook.common.references.CloseableReference;
 import com.facebook.datasource.DataSource;
@@ -263,16 +265,8 @@ public class MusicControlModule extends ReactContextBaseJavaModule implements Co
 
         notification.setCustomNotificationIcon(notificationIcon);
 
-        if ((metadata.hasKey("artwork") && !TextUtils.isEmpty(metadata.getString("artwork")))) {
-            String artwork = null;
-
-            if (metadata.getType("artwork") == ReadableType.Map) {
-                artwork = metadata.getMap("artwork").getString("uri");
-            } else {
-                artwork = metadata.getString("artwork");
-            }
-
-            final String artworkUrl = artwork;
+        if ((metadata.hasKey("artwork") && ReadableType.String == metadata.getType("artwork"))) {
+            String artworkUrl = metadata.getString("artwork");
 
             ImageRequest imageRequest = ImageRequest.fromUri(artworkUrl);
             DataSource<CloseableReference<CloseableImage>> dataSource = Fresco.getImagePipeline().fetchDecodedImage(imageRequest, null);
@@ -290,15 +284,23 @@ public class MusicControlModule extends ReactContextBaseJavaModule implements Co
                 }
                 @Override
                 protected void onFailureImpl(DataSource<CloseableReference<CloseableImage>> dataSource) {
-                    Log.d(TAG, "loadfailed to set color..");
+                    Log.d(TAG, "load failed to set color..");
                     md.putBitmap(MediaMetadataCompat.METADATA_KEY_ART, null);
                     nb.setLargeIcon(null);
                 }
             }, UiThreadImmediateExecutorService.getInstance());
-        } else {
-            Log.d(TAG, "to set color..");
-            md.putBitmap(MediaMetadataCompat.METADATA_KEY_ART, null);
-            nb.setLargeIcon(null);
+        } else if ((metadata.hasKey("artwork") && ReadableType.Map == metadata.getType("artwork"))){
+            Bitmap icon = BitmapFactory.decodeResource(context.getResources(), R.drawable.pimsleuricon11);
+            Log.d(TAG, "to set color..aa icon = " +icon);
+            if (md != null) {
+                md.putBitmap(MediaMetadataCompat.METADATA_KEY_ART, icon);
+                // session.setMetadata(md.build());
+            }
+            if (nb != null && notification != null) {
+                nb.setLargeIcon(icon);
+                notification.show(nb, isPlaying);
+            }
+            // if(icon!=null) icon.recycle();
         }
 
         session.setMetadata(md.build());
