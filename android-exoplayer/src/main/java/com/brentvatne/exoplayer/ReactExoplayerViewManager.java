@@ -192,7 +192,7 @@ public class ReactExoplayerViewManager extends ViewGroupManager<ReactExoplayerVi
 
     @ReactProp(name = PROP_SEEK)
     public void setSeek(final ReactExoplayerView videoView, final float seek) {
-        videoView.seekTo(Math.round(seek * 1000f));
+        videoView.seekTo((int)(seek * 1000f));
     }
 
     @ReactProp(name = PROP_RATE)

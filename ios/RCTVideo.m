@@ -39,6 +39,7 @@ static int const RCTVideoUnset = -1;
   Float64 _progressUpdateInterval;
   BOOL _controls;
   id _timeObserver;
+  NSDictionary *_source;
 
   /* Keep track of any modifiers, need to be applied after each play */
   float _volume;
@@ -303,6 +304,11 @@ static int const RCTVideoUnset = -1;
 
 - (void)setSrc:(NSDictionary *)source
 {
+  _source = source;
+}
+
+- (void)setSource {
+  NSDictionary *source = _source;
   [self removePlayerLayer];
   [self removePlayerTimeObserver];
   [self removePlayerItemObservers];
@@ -680,7 +686,7 @@ static int const RCTVideoUnset = -1;
   NSNumber *seekTime = info[@"time"];
   NSNumber *seekTolerance = info[@"tolerance"];
   
-  int timeScale = 1000;
+  int timeScale = 10000;
   
   AVPlayerItem *item = _player.currentItem;
   if (item && item.status == AVPlayerItemStatusReadyToPlay) {
@@ -689,7 +695,7 @@ static int const RCTVideoUnset = -1;
     CMTime cmSeekTime = CMTimeMakeWithSeconds([seekTime floatValue], timeScale);
     CMTime current = item.currentTime;
     // TODO figure out a good tolerance level
-    CMTime tolerance = CMTimeMake([seekTolerance floatValue], timeScale);
+    CMTime tolerance = kCMTimeZero;
     BOOL wasPaused = _paused;
     
     if (CMTimeCompare(current, cmSeekTime) != 0) {
@@ -1217,5 +1223,11 @@ static int const RCTVideoUnset = -1;
 
   [super removeFromSuperview];
 }
-
+- (void)didSetProps:(NSArray<NSString *> *)changedProps
+{
+    [super didSetProps:changedProps];
+    if ([changedProps containsObject:@"src"]){
+        [self setSource];
+    }
+}
 @end
