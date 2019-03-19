@@ -66,6 +66,7 @@ public class MusicControlModule extends ReactContextBaseJavaModule implements Co
     private boolean isPlaying = false;
     private long controls = 0;
     protected int ratingType = RatingCompat.RATING_PERCENTAGE;
+    private Bitmap realArtWork = null;
 
     public NotificationClose notificationClose = NotificationClose.PAUSED;
 
@@ -205,6 +206,7 @@ public class MusicControlModule extends ReactContextBaseJavaModule implements Co
         md = null;
         pb = null;
         nb = null;
+        realArtWork = null;
 
         init = false;
     }
@@ -273,37 +275,36 @@ public class MusicControlModule extends ReactContextBaseJavaModule implements Co
             dataSource.subscribe(new BaseBitmapDataSubscriber() {
                 @Override
                 protected void onNewResultImpl(@Nullable Bitmap bitmap) {
+                    realArtWork = bitmap;
                     if (md != null) {
-                        md.putBitmap(MediaMetadataCompat.METADATA_KEY_ART, bitmap);
+                        md.putBitmap(MediaMetadataCompat.METADATA_KEY_ART, realArtWork);
                         // session.setMetadata(md.build());
                     }
                     if (nb != null && notification != null) {
-                        nb.setLargeIcon(bitmap);
+                        nb.setLargeIcon(realArtWork);
                         notification.show(nb, isPlaying);
                     }
                 }
                 @Override
                 protected void onFailureImpl(DataSource<CloseableReference<CloseableImage>> dataSource) {
                     Log.d(TAG, "load failed to set color..");
-                    md.putBitmap(MediaMetadataCompat.METADATA_KEY_ART, null);
-                    nb.setLargeIcon(null);
+                    realArtWork = BitmapFactory.decodeResource(context.getResources(), R.drawable.pimsleuricon11);
+                    md.putBitmap(MediaMetadataCompat.METADATA_KEY_ART, realArtWork);
+                    nb.setLargeIcon(realArtWork);
                 }
             }, UiThreadImmediateExecutorService.getInstance());
         } else if ((metadata.hasKey("artwork") && ReadableType.Map == metadata.getType("artwork"))){
-            Bitmap icon = BitmapFactory.decodeResource(context.getResources(), R.drawable.pimsleuricon11);
-            Log.d(TAG, "to set color..aa icon = " +icon);
+            realArtWork = BitmapFactory.decodeResource(context.getResources(), R.drawable.pimsleuricon11);
             if (md != null) {
-                md.putBitmap(MediaMetadataCompat.METADATA_KEY_ART, icon);
-                // session.setMetadata(md.build());
+                md.putBitmap(MediaMetadataCompat.METADATA_KEY_ART, realArtWork);
             }
             if (nb != null && notification != null) {
-                nb.setLargeIcon(icon);
+                nb.setLargeIcon(realArtWork);
                 notification.show(nb, isPlaying);
             }
-            // if(icon!=null) icon.recycle();
         }
 
-        session.setMetadata(md.build());
+        //session.setMetadata(md.build());
         session.setActive(true);
         notification.show(nb, isPlaying);
     }
@@ -340,8 +341,9 @@ public class MusicControlModule extends ReactContextBaseJavaModule implements Co
         pb.setActions(controls);
 
         isPlaying = pbState == PlaybackStateCompat.STATE_PLAYING || pbState == PlaybackStateCompat.STATE_BUFFERING;
-        if (session.isActive())
+        if (session.isActive() && (realArtWork !=null && !realArtWork.isRecycled())){
             notification.show(nb, isPlaying);
+        }
 
         state = pb.build();
         session.setPlaybackState(state);
