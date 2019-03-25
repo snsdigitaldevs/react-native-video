@@ -195,7 +195,9 @@ public class MusicControlModule extends ReactContextBaseJavaModule implements Co
 
         ReactApplicationContext context = getReactApplicationContext();
 
-        context.unregisterReceiver(receiver);
+        if (receiver !=null ){
+            context.unregisterReceiver(receiver);
+        }
         context.unregisterComponentCallbacks(this);
 
         session = null;
@@ -289,8 +291,12 @@ public class MusicControlModule extends ReactContextBaseJavaModule implements Co
                 protected void onFailureImpl(DataSource<CloseableReference<CloseableImage>> dataSource) {
                     Log.d(TAG, "load failed to set color..");
                     realArtWork = BitmapFactory.decodeResource(context.getResources(), R.drawable.pimsleuricon11);
-                    md.putBitmap(MediaMetadataCompat.METADATA_KEY_ART, realArtWork);
-                    nb.setLargeIcon(realArtWork);
+                    if (md !=null){
+                        md.putBitmap(MediaMetadataCompat.METADATA_KEY_ART, realArtWork);
+                    }
+                    if (nb != null){
+                        nb.setLargeIcon(realArtWork);
+                    }
                 }
             }, UiThreadImmediateExecutorService.getInstance());
         } else if ((metadata.hasKey("artwork") && ReadableType.Map == metadata.getType("artwork"))){
@@ -479,7 +485,7 @@ public class MusicControlModule extends ReactContextBaseJavaModule implements Co
         // Trims memory when it reaches a moderate level and the session is inactive
         case ComponentCallbacks2.TRIM_MEMORY_MODERATE:
         case ComponentCallbacks2.TRIM_MEMORY_RUNNING_MODERATE:
-            if (session.isActive())
+            if (session !=null && session.isActive())
                 break;
 
             // Trims memory when it reaches a critical level
