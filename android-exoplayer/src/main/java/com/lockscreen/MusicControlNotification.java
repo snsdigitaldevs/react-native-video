@@ -26,9 +26,9 @@ import static com.lockscreen.MusicControlModule.NOTIFICATION_ID;
 public class MusicControlNotification {
 
     private static final String TAG = MusicControlNotification.class.getSimpleName();
-    protected static final String REMOVE_NOTIFICATION = "music_control_remove_notification";
-    protected static final String MEDIA_BUTTON = "music_control_media_button";
-    protected static final String PACKAGE_NAME = "music_control_package_name";
+    public static final String REMOVE_NOTIFICATION = "music_control_remove_notification";
+    public static final String MEDIA_BUTTON = "music_control_media_button";
+    public static final String PACKAGE_NAME = "music_control_package_name";
 
     private final ReactApplicationContext context;
     private final MusicControlModule module;
@@ -134,33 +134,6 @@ public class MusicControlNotification {
         }
     }
 
-    /**
-     * Code taken from newer version of the support library located in PlaybackStateCompat.toKeyCode
-     * Replace this to PlaybackStateCompat.toKeyCode when React Native updates the support library
-     */
-    private int toKeyCode(long action) {
-        if(action == PlaybackStateCompat.ACTION_PLAY) {
-            return KeyEvent.KEYCODE_MEDIA_PLAY;
-        } else if(action == PlaybackStateCompat.ACTION_PAUSE) {
-            return KeyEvent.KEYCODE_MEDIA_PAUSE;
-        } else if(action == PlaybackStateCompat.ACTION_SKIP_TO_NEXT) {
-            Log.e(TAG,"PlaybackStateCompat.ACTION_SKIP_TO_NEXT");
-            return KeyEvent.KEYCODE_MEDIA_NEXT;
-        } else if(action == PlaybackStateCompat.ACTION_SKIP_TO_PREVIOUS) {
-            Log.e(TAG,"PlaybackStateCompat.ACTION_SKIP_TO_PREVIOUS");
-            return KeyEvent.KEYCODE_MEDIA_PREVIOUS;
-        } else if(action == PlaybackStateCompat.ACTION_STOP) {
-            return KeyEvent.KEYCODE_MEDIA_STOP;
-        } else if(action == PlaybackStateCompat.ACTION_FAST_FORWARD) {
-            return KeyEvent.KEYCODE_MEDIA_FAST_FORWARD;
-        } else if(action == PlaybackStateCompat.ACTION_REWIND) {
-            return KeyEvent.KEYCODE_MEDIA_REWIND;
-        } else if(action == PlaybackStateCompat.ACTION_PLAY_PAUSE) {
-            return KeyEvent.KEYCODE_MEDIA_PLAY_PAUSE;
-        }
-        return KeyEvent.KEYCODE_UNKNOWN;
-    }
-
     private NotificationCompat.Action createAction(String iconName, String title, long mask, long action, NotificationCompat.Action oldAction) {
         if((mask & action) == 0) return null; // When this action is not enabled, return null
         if(oldAction != null) return oldAction; // If this action was already created, we won't create another instance
@@ -171,7 +144,7 @@ public class MusicControlNotification {
         int icon = r.getIdentifier(iconName, "drawable", packageName);
 
         // Creates the intent based on the action
-        int keyCode = toKeyCode(action);
+        int keyCode = Utils.toKeyCode(action);
         Intent intent = new Intent(MEDIA_BUTTON);
         intent.putExtra(Intent.EXTRA_KEY_EVENT, new KeyEvent(KeyEvent.ACTION_DOWN, keyCode));
         intent.putExtra(PACKAGE_NAME, packageName);

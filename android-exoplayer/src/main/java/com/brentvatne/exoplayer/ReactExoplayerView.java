@@ -1,15 +1,24 @@
 package com.brentvatne.exoplayer;
 
 import android.annotation.SuppressLint;
+import android.annotation.TargetApi;
 import android.app.Activity;
+import android.app.PendingIntent;
 import android.content.Context;
+import android.content.Intent;
+import android.media.AudioAttributes;
+import android.media.AudioFocusRequest;
 import android.media.AudioManager;
 import android.net.Uri;
+import android.os.Build;
 import android.os.Handler;
 import android.os.Message;
 import android.os.PowerManager;
+import android.provider.ContactsContract;
+import android.support.v4.media.session.PlaybackStateCompat;
 import android.text.TextUtils;
 import android.util.Log;
+import android.view.KeyEvent;
 import android.view.View;
 import android.view.Window;
 import android.view.accessibility.CaptioningManager;
@@ -64,6 +73,8 @@ import com.google.android.exoplayer2.upstream.DataSource;
 import com.google.android.exoplayer2.upstream.DefaultAllocator;
 import com.google.android.exoplayer2.upstream.DefaultBandwidthMeter;
 import com.google.android.exoplayer2.util.Util;
+import com.lockscreen.MusicControlNotification;
+import com.lockscreen.Utils;
 
 import java.net.CookieHandler;
 import java.net.CookieManager;
@@ -73,6 +84,7 @@ import java.util.Map;
 import java.lang.Object;
 import java.util.ArrayList;
 import java.util.Locale;
+
 
 @SuppressLint("ViewConstructor")
 class ReactExoplayerView extends FrameLayout implements
@@ -135,9 +147,9 @@ class ReactExoplayerView extends FrameLayout implements
     // React
     private final ThemedReactContext themedReactContext;
     private final AudioManager audioManager;
-    private final PowerManager mPowerManager;
-    private final PowerManager.WakeLock wl;
     private final AudioBecomingNoisyReceiver audioBecomingNoisyReceiver;
+
+    private AudioFocusRequest mFocusRequest;
 
     private final Handler progressHandler = new Handler() {
         @Override
@@ -162,6 +174,14 @@ class ReactExoplayerView extends FrameLayout implements
                     }
                     break;
             }
+        }
+    };
+
+    private final Handler mMyHandler = new Handler() {
+        @Override
+        public void handleMessage(Message msg) {
+            Log.d(TAG,"mMyHandler msg = " + msg);
+            super.handleMessage(msg);
         }
     };
 
@@ -192,12 +212,31 @@ class ReactExoplayerView extends FrameLayout implements
         audioManager = (AudioManager) context.getSystemService(Context.AUDIO_SERVICE);
         themedReactContext.addLifecycleEventListener(this);
         audioBecomingNoisyReceiver = new AudioBecomingNoisyReceiver(themedReactContext);
-        mPowerManager = (PowerManager)themedReactContext.getSystemService(Context.POWER_SERVICE);
-
-        wl = mPowerManager.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "react-native-video" + ":" + TAG);
         initializePlayer();
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            initUpperOAudioFocus();
+        }
     }
 
+
+    @TargetApi(Build.VERSION_CODES.O)
+    private void initUpperOAudioFocus() {
+        AudioAttributes mPlaybackAttributes = new AudioAttributes.Builder()
+                .setUsage(AudioAttributes.USAGE_MEDIA)
+                .setContentType(AudioAttributes.CONTENT_TYPE_SPEECH)
+                .build();
+        mFocusRequest = new AudioFocusRequest.Builder(AudioManager.AUDIOFOCUS_GAIN)
+                .setAudioAttributes(mPlaybackAttributes)
+                .setAcceptsDelayedFocusGain(true)
+                .setWillPauseWhenDucked(true)
+                .setOnAudioFocusChangeListener(upperOListener, mMyHandler)
+                .build();
+    }
+
+    @Override
+    public String toString() {
+        return getClass().getName() + "@" + Integer.toHexString(System.identityHashCode(this));
+    }
 
     @Override
     public void setId(int id) {
@@ -255,7 +294,6 @@ class ReactExoplayerView extends FrameLayout implements
 
     @Override
     public void onHostDestroy() {
-        releaseWakeLock();
         stopPlayback();
     }
 
@@ -283,7 +321,6 @@ class ReactExoplayerView extends FrameLayout implements
 
             PlaybackParameters params = new PlaybackParameters(rate, 1f);
             player.setPlaybackParameters(params);
-            acquireWakeLock();
         }
         if (playerNeedsSource && srcUri != null) {
             ArrayList<MediaSource> mediaSourceList = buildTextSources();
@@ -366,7 +403,6 @@ class ReactExoplayerView extends FrameLayout implements
             player = null;
             trackSelector = null;
         }
-        releaseWakeLock();
         progressHandler.removeMessages(SHOW_PROGRESS);
         themedReactContext.removeLifecycleEventListener(this);
         audioBecomingNoisyReceiver.removeListener();
@@ -376,10 +412,24 @@ class ReactExoplayerView extends FrameLayout implements
         if (disableFocus) {
             return true;
         }
-        int result = audioManager.requestAudioFocus(this,
-                AudioManager.STREAM_MUSIC,
-                AudioManager.AUDIOFOCUS_GAIN);
-        return result == AudioManager.AUDIOFOCUS_REQUEST_GRANTED;
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            if (null == mFocusRequest) initUpperOAudioFocus();
+            int res = audioManager.requestAudioFocus(mFocusRequest);
+            Log.d(TAG,"requestAudioFocus ==== res = " +res);
+            if (res == AudioManager.AUDIOFOCUS_REQUEST_FAILED ||
+                    res == AudioManager.AUDIOFOCUS_REQUEST_DELAYED) {
+               return false;
+            } else if (res == AudioManager.AUDIOFOCUS_REQUEST_GRANTED) {
+                return true;
+            }
+            return true;
+        }else {
+            int result = audioManager.requestAudioFocus(this,
+                    AudioManager.STREAM_MUSIC,
+                    AudioManager.AUDIOFOCUS_GAIN);
+            Log.d(TAG,"requestAudioFocus ==== result = " + result);
+            return result == AudioManager.AUDIOFOCUS_REQUEST_GRANTED;
+        }
     }
 
     private void setPlayWhenReady(boolean playWhenReady) {
@@ -417,20 +467,6 @@ class ReactExoplayerView extends FrameLayout implements
         } else {
             initializePlayer();
         }
-        if (!disableFocus) {
-            setKeepScreenOn(true);
-        }
-    }
-
-
-    private void acquireWakeLock() {
-        wl.acquire();
-    }
-
-    private void releaseWakeLock () {
-        if (wl !=null && wl.isHeld()) {
-            wl.release();
-        }
     }
 
     private void pausePlayback() {
@@ -439,7 +475,6 @@ class ReactExoplayerView extends FrameLayout implements
                 setPlayWhenReady(false);
             }
         }
-        setKeepScreenOn(false);
     }
 
     private void stopPlayback() {
@@ -451,7 +486,6 @@ class ReactExoplayerView extends FrameLayout implements
         if (isFullscreen) {
             setFullscreen(false);
         }
-        setKeepScreenOn(false);
         audioManager.abandonAudioFocus(this);
     }
 
@@ -477,16 +511,45 @@ class ReactExoplayerView extends FrameLayout implements
         return DataSourceUtil.getDefaultDataSourceFactory(this.themedReactContext, useBandwidthMeter ? BANDWIDTH_METER : null, requestHeaders);
     }
 
-    // AudioManager.OnAudioFocusChangeListener implementation
+    AudioManager.OnAudioFocusChangeListener upperOListener = new AudioManager.OnAudioFocusChangeListener() {
+        @Override
+        public void onAudioFocusChange(int focusChange) {
+            Log.d(TAG,"26 onAudioFocusChange = " + focusChange);
+            // Creates the intent based on the action
+            if (themedReactContext == null) {
+                Log.d(TAG,"drop this Focus Change");
+                return;
+            }
+            int keyCode = KeyEvent.KEYCODE_MEDIA_PAUSE;
+            switch (focusChange) {
+                case AudioManager.AUDIOFOCUS_GAIN:
+                    if (null != player) {
+                        player.setVolume(1);
+                    }
+                    noticeToUpdateStatus(PlaybackStateCompat.ACTION_PLAY);
+                    break;
+                case AudioManager.AUDIOFOCUS_LOSS:
+                    noticeToUpdateStatus(PlaybackStateCompat.ACTION_PAUSE);
+                    break;
+                case AudioManager.AUDIOFOCUS_LOSS_TRANSIENT:
+                case AudioManager.AUDIOFOCUS_LOSS_TRANSIENT_CAN_DUCK:
+                    if (null != player) {
+                        player.setVolume(0.4f);
+                    }
+                    break;
+            }
+        }
+    };
 
     @Override
     public void onAudioFocusChange(int focusChange) {
+        Log.d(TAG," lower 26 2 onAudioFocusChanged = " + focusChange);
         switch (focusChange) {
             case AudioManager.AUDIOFOCUS_LOSS:
-                eventEmitter.audioFocusChanged(false);
+                noticeToUpdateStatus(PlaybackStateCompat.ACTION_PAUSE);
                 break;
             case AudioManager.AUDIOFOCUS_GAIN:
-                eventEmitter.audioFocusChanged(true);
+                noticeToUpdateStatus(PlaybackStateCompat.ACTION_PLAY);
                 break;
             default:
                 break;
@@ -503,7 +566,24 @@ class ReactExoplayerView extends FrameLayout implements
         }
     }
 
-    // AudioBecomingNoisyListener implementation
+    private void noticeToUpdateStatus(long action) {
+        if (PlaybackStateCompat.ACTION_PLAY == action) {
+            Log.d(TAG,"eventEmitter.audioFocusChanged true");
+            eventEmitter.audioFocusChanged(true);
+            startPlayback();
+        } else if(PlaybackStateCompat.ACTION_PAUSE == action) {
+            Log.d(TAG,"eventEmitter.audioFocusChanged false");
+            eventEmitter.audioFocusChanged(false);
+            pausePlayback();
+        } else {
+            return;
+        }
+        int keyCode = Utils.toKeyCode(action);
+        Intent intent = new Intent(MusicControlNotification.MEDIA_BUTTON);
+        intent.putExtra(Intent.EXTRA_KEY_EVENT, new KeyEvent(KeyEvent.ACTION_DOWN, keyCode));
+        intent.putExtra(MusicControlNotification.PACKAGE_NAME, themedReactContext.getPackageName());
+        themedReactContext.sendBroadcast(intent);
+    }
 
     @Override
     public void onAudioBecomingNoisy() {
