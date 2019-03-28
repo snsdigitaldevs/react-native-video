@@ -10,6 +10,7 @@
 
 @property (nonatomic, copy) NSString *artworkUrl;
 @property (nonatomic, assign) BOOL audioInterruptionsObserved;
+@property (nonatomic, assign) BOOL observeHeadsetPlayPause;
 
 @end
 
@@ -126,9 +127,29 @@ RCT_EXPORT_METHOD(enableControl:(NSString *) controlName enabled:(BOOL) enabled 
     MPRemoteCommandCenter *remoteCenter = [MPRemoteCommandCenter sharedCommandCenter];
 
     if ([controlName isEqual: @"pause"]) {
+        NSLog(@"controlName isEqual pasue");
         [self toggleHandler:remoteCenter.pauseCommand withSelector:@selector(onPause:) enabled:enabled];
+//        [remoteCenter.pauseCommand addTargetWithHandler:^MPRemoteCommandHandlerStatus(MPRemoteCommandEvent * _Nonnull event) {
+//            NSLog(@"caopeng send Pause");
+//            [self sendEvent:@"pause"];
+//            return MPRemoteCommandHandlerStatusSuccess;
+//        }];
+//        [remoteCenter.pauseCommand addTargetUsingBlock:^(MPRemoteCommandEvent *event){
+//
+//        }];
+//        MPRemoteCommandCenter *commandCenter = [MPRemoteCommandCenter sharedCommandCenter];
+//        [commandCenter.playCommand addTargetUsingBlock:^(MPRemoteCommandEvent *event) {
+//            // Begin playing the current track.
+//            //[[MyPlayer sharedPlayer] play];
+//        }];
     } else if ([controlName isEqual: @"play"]) {
+        NSLog(@"controlName isEqual play");
         [self toggleHandler:remoteCenter.playCommand withSelector:@selector(onPlay:) enabled:enabled];
+//        [remoteCenter.playCommand addTargetWithHandler:^MPRemoteCommandHandlerStatus(MPRemoteCommandEvent * _Nonnull event) {
+//            NSLog(@"caopeng send Pause");
+//            [self sendEvent:@"play"];
+//            return MPRemoteCommandHandlerStatusSuccess;
+//        }];
 
     } else if ([controlName isEqual: @"changePlaybackPosition"]) {
         [self toggleHandler:remoteCenter.changePlaybackPositionCommand withSelector:@selector(onChangePlaybackPosition:) enabled:enabled];
@@ -138,6 +159,11 @@ RCT_EXPORT_METHOD(enableControl:(NSString *) controlName enabled:(BOOL) enabled 
 
     } else if ([controlName isEqual: @"togglePlayPause"]) {
         [self toggleHandler:remoteCenter.togglePlayPauseCommand withSelector:@selector(onTogglePlayPause:) enabled:enabled];
+//        [remoteCenter.togglePlayPauseCommand addTargetWithHandler:^MPRemoteCommandHandlerStatus(MPRemoteCommandEvent * _Nonnull event) {
+//            NSLog(@"caopeng toggle button pressed");
+//            [self sendEvent:@"togglePlayPause"];
+//            return MPRemoteCommandHandlerStatusSuccess;
+//        }];
 
     } else if ([controlName isEqual: @"enableLanguageOption"]) {
         [self toggleHandler:remoteCenter.enableLanguageOptionCommand withSelector:@selector(onEnableLanguageOption:) enabled:enabled];
@@ -192,6 +218,31 @@ RCT_EXPORT_METHOD(observeAudioInterruptions:(BOOL) observe){
     }
     self.audioInterruptionsObserved = observe;
 }
+
+RCT_EXPORT_METHOD(observeHeadsetPlayPause:(BOOL) observe) {
+    if (self.observeHeadsetPlayPause == observe) {
+        return;
+    }
+    MPRemoteCommandCenter *remoteCenter = [MPRemoteCommandCenter sharedCommandCenter];
+    if (observe) {
+        [remoteCenter.pauseCommand addTargetWithHandler:^MPRemoteCommandHandlerStatus(MPRemoteCommandEvent * _Nonnull event) {
+            NSLog(@"caopeng send Pause");
+            [self sendEvent:@"pause"];
+            return MPRemoteCommandHandlerStatusSuccess;
+        }];
+        [remoteCenter.playCommand addTargetWithHandler:^MPRemoteCommandHandlerStatus(MPRemoteCommandEvent * _Nonnull event) {
+            NSLog(@"caopeng send Pause");
+            [self sendEvent:@"play"];
+            return MPRemoteCommandHandlerStatusSuccess;
+        }];
+    } else {
+        [remoteCenter.pauseCommand removeTarget:self];
+        [remoteCenter.playCommand removeTarget:self];
+    }
+    self.observeHeadsetPlayPause = observe;
+}
+
+
 
 #pragma mark internal
 
@@ -257,11 +308,19 @@ RCT_EXPORT_METHOD(observeAudioInterruptions:(BOOL) observe){
     [[NSNotificationCenter defaultCenter] removeObserver:self name:AVAudioSessionRouteChangeNotification object:nil];
 }
 
-- (void)onPause:(MPRemoteCommandEvent*)event { [self sendEvent:@"pause"]; }
-- (void)onPlay:(MPRemoteCommandEvent*)event { [self sendEvent:@"play"]; }
+- (void)onPause:(MPRemoteCommandEvent*)event {
+    NSLog(@" caopeng pause");
+    [self sendEvent:@"pause"]; }
+- (void)onPlay:(MPRemoteCommandEvent*)event {
+    NSLog(@" caopeng onPlay do nothing...");
+}
 - (void)onChangePlaybackPosition:(MPChangePlaybackPositionCommandEvent*)event { [self sendEventWithValue:@"changePlaybackPosition" withValue:[NSString stringWithFormat:@"%.15f", event.positionTime]]; }
 - (void)onStop:(MPRemoteCommandEvent*)event { [self sendEvent:@"stop"]; }
-- (void)onTogglePlayPause:(MPRemoteCommandEvent*)event { [self sendEvent:@"togglePlayPause"]; }
+- (void)onTogglePlayPause:(MPRemoteCommandEvent*)event {
+    NSLog(@" caopeng onTogglePlayPause");
+    [self sendEvent:@"togglePlayPause"];
+
+}
 - (void)onEnableLanguageOption:(MPRemoteCommandEvent*)event { [self sendEvent:@"enableLanguageOption"]; }
 - (void)onDisableLanguageOption:(MPRemoteCommandEvent*)event { [self sendEvent:@"disableLanguageOption"]; }
 - (void)onNextTrack:(MPRemoteCommandEvent*)event { [self sendEvent:@"nextTrack"]; }
@@ -364,7 +423,6 @@ RCT_EXPORT_METHOD(observeAudioInterruptions:(BOOL) observe){
     }
     NSInteger interruptionType = [notification.userInfo[AVAudioSessionInterruptionTypeKey] integerValue];
     NSInteger interruptionOption = [notification.userInfo[AVAudioSessionInterruptionOptionKey] integerValue];
-
     if (interruptionType == AVAudioSessionInterruptionTypeBegan) {
         // Playback interrupted by an incoming phone call.
         [self sendEvent:@"pause"];
