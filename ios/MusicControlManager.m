@@ -127,30 +127,9 @@ RCT_EXPORT_METHOD(enableControl:(NSString *) controlName enabled:(BOOL) enabled 
     MPRemoteCommandCenter *remoteCenter = [MPRemoteCommandCenter sharedCommandCenter];
 
     if ([controlName isEqual: @"pause"]) {
-        NSLog(@"controlName isEqual pasue");
         [self toggleHandler:remoteCenter.pauseCommand withSelector:@selector(onPause:) enabled:enabled];
-//        [remoteCenter.pauseCommand addTargetWithHandler:^MPRemoteCommandHandlerStatus(MPRemoteCommandEvent * _Nonnull event) {
-//            NSLog(@"caopeng send Pause");
-//            [self sendEvent:@"pause"];
-//            return MPRemoteCommandHandlerStatusSuccess;
-//        }];
-//        [remoteCenter.pauseCommand addTargetUsingBlock:^(MPRemoteCommandEvent *event){
-//
-//        }];
-//        MPRemoteCommandCenter *commandCenter = [MPRemoteCommandCenter sharedCommandCenter];
-//        [commandCenter.playCommand addTargetUsingBlock:^(MPRemoteCommandEvent *event) {
-//            // Begin playing the current track.
-//            //[[MyPlayer sharedPlayer] play];
-//        }];
     } else if ([controlName isEqual: @"play"]) {
-        NSLog(@"controlName isEqual play");
         [self toggleHandler:remoteCenter.playCommand withSelector:@selector(onPlay:) enabled:enabled];
-//        [remoteCenter.playCommand addTargetWithHandler:^MPRemoteCommandHandlerStatus(MPRemoteCommandEvent * _Nonnull event) {
-//            NSLog(@"caopeng send Pause");
-//            [self sendEvent:@"play"];
-//            return MPRemoteCommandHandlerStatusSuccess;
-//        }];
-
     } else if ([controlName isEqual: @"changePlaybackPosition"]) {
         [self toggleHandler:remoteCenter.changePlaybackPositionCommand withSelector:@selector(onChangePlaybackPosition:) enabled:enabled];
 
@@ -159,12 +138,6 @@ RCT_EXPORT_METHOD(enableControl:(NSString *) controlName enabled:(BOOL) enabled 
 
     } else if ([controlName isEqual: @"togglePlayPause"]) {
         [self toggleHandler:remoteCenter.togglePlayPauseCommand withSelector:@selector(onTogglePlayPause:) enabled:enabled];
-//        [remoteCenter.togglePlayPauseCommand addTargetWithHandler:^MPRemoteCommandHandlerStatus(MPRemoteCommandEvent * _Nonnull event) {
-//            NSLog(@"caopeng toggle button pressed");
-//            [self sendEvent:@"togglePlayPause"];
-//            return MPRemoteCommandHandlerStatusSuccess;
-//        }];
-
     } else if ([controlName isEqual: @"enableLanguageOption"]) {
         [self toggleHandler:remoteCenter.enableLanguageOptionCommand withSelector:@selector(onEnableLanguageOption:) enabled:enabled];
 
@@ -226,12 +199,10 @@ RCT_EXPORT_METHOD(observeHeadsetPlayPause:(BOOL) observe) {
     MPRemoteCommandCenter *remoteCenter = [MPRemoteCommandCenter sharedCommandCenter];
     if (observe) {
         [remoteCenter.pauseCommand addTargetWithHandler:^MPRemoteCommandHandlerStatus(MPRemoteCommandEvent * _Nonnull event) {
-            NSLog(@"caopeng send Pause");
             [self sendEvent:@"pause"];
             return MPRemoteCommandHandlerStatusSuccess;
         }];
         [remoteCenter.playCommand addTargetWithHandler:^MPRemoteCommandHandlerStatus(MPRemoteCommandEvent * _Nonnull event) {
-            NSLog(@"caopeng send Pause");
             [self sendEvent:@"play"];
             return MPRemoteCommandHandlerStatusSuccess;
         }];
@@ -309,15 +280,11 @@ RCT_EXPORT_METHOD(observeHeadsetPlayPause:(BOOL) observe) {
 }
 
 - (void)onPause:(MPRemoteCommandEvent*)event {
-    NSLog(@" caopeng pause");
     [self sendEvent:@"pause"]; }
-- (void)onPlay:(MPRemoteCommandEvent*)event {
-    NSLog(@" caopeng onPlay do nothing...");
-}
+- (void)onPlay:(MPRemoteCommandEvent*)event {}
 - (void)onChangePlaybackPosition:(MPChangePlaybackPositionCommandEvent*)event { [self sendEventWithValue:@"changePlaybackPosition" withValue:[NSString stringWithFormat:@"%.15f", event.positionTime]]; }
 - (void)onStop:(MPRemoteCommandEvent*)event { [self sendEvent:@"stop"]; }
 - (void)onTogglePlayPause:(MPRemoteCommandEvent*)event {
-    NSLog(@" caopeng onTogglePlayPause");
     [self sendEvent:@"togglePlayPause"];
 
 }
