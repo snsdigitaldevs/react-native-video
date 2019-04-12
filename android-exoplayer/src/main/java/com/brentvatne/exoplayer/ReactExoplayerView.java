@@ -520,7 +520,6 @@ class ReactExoplayerView extends FrameLayout implements
                 Log.d(TAG,"drop this Focus Change");
                 return;
             }
-            int keyCode = KeyEvent.KEYCODE_MEDIA_PAUSE;
             switch (focusChange) {
                 case AudioManager.AUDIOFOCUS_GAIN:
                     if (null != player) {

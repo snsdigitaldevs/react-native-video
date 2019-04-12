@@ -100,7 +100,7 @@ public class MusicControlNotification {
         } else if(module.notificationClose == MusicControlModule.NotificationClose.PAUSED) {
             builder.setOngoing(isPlaying);
         } else { // NotificationClose.NEVER
-            builder.setOngoing(true);
+            builder.setOngoing(false);
         }
 
         builder.setSmallIcon(customIcon != 0 ? customIcon : smallIcon);
@@ -115,12 +115,21 @@ public class MusicControlNotification {
         Intent remove = new Intent(REMOVE_NOTIFICATION);
         remove.putExtra(PACKAGE_NAME, context.getApplicationInfo().packageName);
         builder.setDeleteIntent(PendingIntent.getBroadcast(context, 0, remove, PendingIntent.FLAG_UPDATE_CURRENT));
+        if (MusicControlModule.INSTANCE!=null
+            &&MusicControlModule.INSTANCE.getRealArtWork()!=null
+            && MusicControlModule.INSTANCE.getRealArtWork().isRecycled()){
+            return null;
+        }
 
         return builder.build();
     }
 
     public synchronized void show(NotificationCompat.Builder builder, boolean isPlaying) {
-        NotificationManagerCompat.from(context).notify(NOTIFICATION_ID, prepareNotification(builder, isPlaying));
+        Notification notification = prepareNotification(builder, isPlaying);
+        Log.d(TAG,"notification="+ notification);
+        if (notification !=null ) {
+            NotificationManagerCompat.from(context).notify(NOTIFICATION_ID, notification);
+        }
     }
 
     public void hide() {
@@ -164,7 +173,7 @@ public class MusicControlNotification {
         public void onCreate() {
             super.onCreate();
 
-            if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.O &&
+            if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.O && MusicControlModule.INSTANCE !=null &&
                     MusicControlModule.INSTANCE.notification != null) { // TODO up to o
                 Notification notification = MusicControlModule.INSTANCE.notification.prepareNotification(MusicControlModule.INSTANCE.nb,false);
                 startForeground(NOTIFICATION_ID, notification);

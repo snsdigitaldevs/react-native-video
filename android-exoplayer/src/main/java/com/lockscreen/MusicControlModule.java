@@ -278,6 +278,7 @@ public class MusicControlModule extends ReactContextBaseJavaModule implements Co
                 @Override
                 protected void onNewResultImpl(@Nullable Bitmap bitmap) {
                     realArtWork = bitmap;
+                    Log.d(TAG,"onNewResultImpl bitmap="+bitmap);
                     if (md != null) {
                         md.putBitmap(MediaMetadataCompat.METADATA_KEY_ART, realArtWork);
                         // session.setMetadata(md.build());
@@ -468,6 +469,9 @@ public class MusicControlModule extends ReactContextBaseJavaModule implements Co
         session.setPlaybackState(state);
     }
 
+    public Bitmap getRealArtWork() {
+        return realArtWork;
+    }
     private void dump(){
         Log.i(TAG,">DUMP START<");
         if (session !=null ) Log.d(TAG,"session = "+ session);
