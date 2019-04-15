@@ -487,6 +487,7 @@ class ReactExoplayerView extends FrameLayout implements
             setFullscreen(false);
         }
         audioManager.abandonAudioFocus(this);
+        audioManager.abandonAudioFocus(upperOListener);
     }
 
     private void updateResumePosition() {
