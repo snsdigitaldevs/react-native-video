@@ -176,7 +176,9 @@ public class MusicControlNotification {
             if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.O && MusicControlModule.INSTANCE !=null &&
                     MusicControlModule.INSTANCE.notification != null) { // TODO up to o
                 Notification notification = MusicControlModule.INSTANCE.notification.prepareNotification(MusicControlModule.INSTANCE.nb,false);
-                startForeground(NOTIFICATION_ID, notification);
+                if (notification !=null ) {
+                    startForeground(NOTIFICATION_ID, notification);
+                }
             } else {
                 //TODO
             }
