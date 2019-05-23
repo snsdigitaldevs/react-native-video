@@ -409,7 +409,8 @@ class ReactExoplayerView extends FrameLayout implements
     }
 
     private boolean requestAudioFocus() {
-        if (disableFocus) {
+        if (disableFocus || srcUri == null
+                || (srcUri!=null && srcUri.toString().toLowerCase().contains("quiz"))) {
             return true;
         }
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
