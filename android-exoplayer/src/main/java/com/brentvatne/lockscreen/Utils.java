@@ -1,4 +1,4 @@
-package com.lockscreen;
+package com.brentvatne.lockscreen;
 
 import android.support.v4.media.session.PlaybackStateCompat;
 import android.util.Log;

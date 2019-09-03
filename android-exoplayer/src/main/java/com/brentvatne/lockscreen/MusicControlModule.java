@@ -1,4 +1,4 @@
-package com.lockscreen;
+package com.brentvatne.lockscreen;
 
 import android.app.NotificationManager;
 import android.app.NotificationChannel;
@@ -8,19 +8,22 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.Context;
 import android.content.res.Configuration;
-import android.content.res.Resources;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.media.AudioManager;
 import android.os.SystemClock;
 import android.os.Build;
-import android.support.annotation.RequiresApi;
+
+import androidx.annotation.RequiresApi;
+
 import android.support.v4.media.MediaMetadataCompat;
 import android.support.v4.media.RatingCompat;
 import android.support.v4.media.session.MediaSessionCompat;
 import android.support.v4.media.session.PlaybackStateCompat;
-import android.support.v4.app.NotificationCompat;
-import android.support.v4.media.app.NotificationCompat.MediaStyle;
+
+import androidx.core.app.NotificationCompat;
+import androidx.media.app.NotificationCompat.MediaStyle;
+
 import android.util.Log;
 
 import com.brentvatne.react.R;
@@ -36,6 +39,7 @@ import com.facebook.react.bridge.ReactContextBaseJavaModule;
 import com.facebook.react.bridge.ReactMethod;
 import com.facebook.react.bridge.ReadableMap;
 import com.facebook.react.bridge.ReadableType;
+
 import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
@@ -182,7 +186,7 @@ public class MusicControlModule extends ReactContextBaseJavaModule implements Co
     public void stopControl() {
         Intent myIntent = new Intent();
         myIntent.setComponent(new ComponentName("com.thoughtworks.pimsleur.unlimited.development",
-                "com.lockscreen.MusicControlNotification$NotificationService"));
+                "com.brentvatne.lockscreen.MusicControlNotification$NotificationService"));
         if (getReactApplicationContext() != null)
             getReactApplicationContext().stopService(myIntent);
         if (!init)
@@ -195,7 +199,7 @@ public class MusicControlModule extends ReactContextBaseJavaModule implements Co
 
         ReactApplicationContext context = getReactApplicationContext();
 
-        if (receiver !=null ){
+        if (receiver != null) {
             context.unregisterReceiver(receiver);
         }
         context.unregisterComponentCallbacks(this);
@@ -278,7 +282,7 @@ public class MusicControlModule extends ReactContextBaseJavaModule implements Co
                 @Override
                 protected void onNewResultImpl(@Nullable Bitmap bitmap) {
                     realArtWork = bitmap;
-                    Log.d(TAG,"onNewResultImpl bitmap="+bitmap);
+                    Log.d(TAG, "onNewResultImpl bitmap=" + bitmap);
                     if (md != null) {
                         md.putBitmap(MediaMetadataCompat.METADATA_KEY_ART, realArtWork);
                         // session.setMetadata(md.build());
@@ -288,19 +292,20 @@ public class MusicControlModule extends ReactContextBaseJavaModule implements Co
                         notification.show(nb, isPlaying);
                     }
                 }
+
                 @Override
                 protected void onFailureImpl(DataSource<CloseableReference<CloseableImage>> dataSource) {
                     Log.d(TAG, "load failed to set color..");
                     realArtWork = BitmapFactory.decodeResource(context.getResources(), R.drawable.pimsleuricon11);
-                    if (md !=null){
+                    if (md != null) {
                         md.putBitmap(MediaMetadataCompat.METADATA_KEY_ART, realArtWork);
                     }
-                    if (nb != null){
+                    if (nb != null) {
                         nb.setLargeIcon(realArtWork);
                     }
                 }
             }, UiThreadImmediateExecutorService.getInstance());
-        } else if ((metadata.hasKey("artwork") && ReadableType.Map == metadata.getType("artwork"))){
+        } else if ((metadata.hasKey("artwork") && ReadableType.Map == metadata.getType("artwork"))) {
             realArtWork = BitmapFactory.decodeResource(context.getResources(), R.drawable.pimsleuricon11);
             if (md != null) {
                 md.putBitmap(MediaMetadataCompat.METADATA_KEY_ART, realArtWork);
@@ -348,7 +353,7 @@ public class MusicControlModule extends ReactContextBaseJavaModule implements Co
         pb.setActions(controls);
 
         isPlaying = pbState == PlaybackStateCompat.STATE_PLAYING || pbState == PlaybackStateCompat.STATE_BUFFERING;
-        if (session.isActive() && (realArtWork !=null && !realArtWork.isRecycled())){
+        if (session.isActive() && (realArtWork != null && !realArtWork.isRecycled())) {
             notification.show(nb, isPlaying);
         }
 
@@ -387,73 +392,73 @@ public class MusicControlModule extends ReactContextBaseJavaModule implements Co
 
         Map<String, Integer> skipOptions = new HashMap<String, Integer>();
 
-        long controlValue=0l;
+        long controlValue = 0l;
         switch (control) {
-        case "skipForward":
-            if (options.hasKey("interval"))
-                skipOptions.put("skipForward", options.getInt("interval"));
-            controlValue = PlaybackStateCompat.ACTION_FAST_FORWARD;
-            break;
-        case "skipBackward":
-            if (options.hasKey("interval"))
-                skipOptions.put("skipBackward", options.getInt("interval"));
-            controlValue = PlaybackStateCompat.ACTION_REWIND;
-            break;
-        case "nextTrack":
-            controlValue = PlaybackStateCompat.ACTION_SKIP_TO_NEXT;
-            break;
-        case "previousTrack":
-            controlValue = PlaybackStateCompat.ACTION_SKIP_TO_PREVIOUS;
-            break;
-        case "play":
-            Log.d(TAG,"play..");
-            controlValue = PlaybackStateCompat.ACTION_PLAY;
-            break;
-        case "pause":
-            Log.d(TAG,"setPause..");
-            controlValue = PlaybackStateCompat.ACTION_PAUSE;
-            break;
-        case "togglePlayPause":
-            controlValue = PlaybackStateCompat.ACTION_PLAY_PAUSE;
-            break;
-        case "stop":
-            controlValue = PlaybackStateCompat.ACTION_STOP;
-            break;
-        case "seek":
-            controlValue = PlaybackStateCompat.ACTION_SEEK_TO;
-            break;
-        case "setRating":
-            controlValue = PlaybackStateCompat.ACTION_SET_RATING;
-            break;
-        case "volume":
-            volume = volume.create(enable, null, null);
-            if (remoteVolume)
-                session.setPlaybackToRemote(volume);
-            return;
-        case "remoteVolume":
-            remoteVolume = enable;
-            if (enable) {
-                session.setPlaybackToRemote(volume);
-            } else {
-                session.setPlaybackToLocal(AudioManager.STREAM_MUSIC);
-            }
-            return;
-        case "closeNotification":
-            if (enable) {
-                if (options.hasKey("when")) {
-                    if ("always".equals(options.getString("when"))) {
-                        this.notificationClose = notificationClose.ALWAYS;
-                    } else if ("paused".equals(options.getString("when"))) {
-                        this.notificationClose = notificationClose.PAUSED;
-                    } else {
-                        this.notificationClose = notificationClose.NEVER;
-                    }
+            case "skipForward":
+                if (options.hasKey("interval"))
+                    skipOptions.put("skipForward", options.getInt("interval"));
+                controlValue = PlaybackStateCompat.ACTION_FAST_FORWARD;
+                break;
+            case "skipBackward":
+                if (options.hasKey("interval"))
+                    skipOptions.put("skipBackward", options.getInt("interval"));
+                controlValue = PlaybackStateCompat.ACTION_REWIND;
+                break;
+            case "nextTrack":
+                controlValue = PlaybackStateCompat.ACTION_SKIP_TO_NEXT;
+                break;
+            case "previousTrack":
+                controlValue = PlaybackStateCompat.ACTION_SKIP_TO_PREVIOUS;
+                break;
+            case "play":
+                Log.d(TAG, "play..");
+                controlValue = PlaybackStateCompat.ACTION_PLAY;
+                break;
+            case "pause":
+                Log.d(TAG, "setPause..");
+                controlValue = PlaybackStateCompat.ACTION_PAUSE;
+                break;
+            case "togglePlayPause":
+                controlValue = PlaybackStateCompat.ACTION_PLAY_PAUSE;
+                break;
+            case "stop":
+                controlValue = PlaybackStateCompat.ACTION_STOP;
+                break;
+            case "seek":
+                controlValue = PlaybackStateCompat.ACTION_SEEK_TO;
+                break;
+            case "setRating":
+                controlValue = PlaybackStateCompat.ACTION_SET_RATING;
+                break;
+            case "volume":
+                volume = volume.create(enable, null, null);
+                if (remoteVolume)
+                    session.setPlaybackToRemote(volume);
+                return;
+            case "remoteVolume":
+                remoteVolume = enable;
+                if (enable) {
+                    session.setPlaybackToRemote(volume);
+                } else {
+                    session.setPlaybackToLocal(AudioManager.STREAM_MUSIC);
                 }
                 return;
-            }
-        default:
-            // Unknown control type, let's just ignore it
-            return;
+            case "closeNotification":
+                if (enable) {
+                    if (options.hasKey("when")) {
+                        if ("always".equals(options.getString("when"))) {
+                            this.notificationClose = notificationClose.ALWAYS;
+                        } else if ("paused".equals(options.getString("when"))) {
+                            this.notificationClose = notificationClose.PAUSED;
+                        } else {
+                            this.notificationClose = notificationClose.NEVER;
+                        }
+                    }
+                    return;
+                }
+            default:
+                // Unknown control type, let's just ignore it
+                return;
         }
 
         if (enable) {
@@ -472,34 +477,35 @@ public class MusicControlModule extends ReactContextBaseJavaModule implements Co
     public Bitmap getRealArtWork() {
         return realArtWork;
     }
-    private void dump(){
-        Log.i(TAG,">DUMP START<");
-        if (session !=null ) Log.d(TAG,"session = "+ session);
-        if (notification !=null )Log.d(TAG,"notification = "+ notification);
-        if (pb !=null ) Log.d(TAG,"pb = "+ pb);
-        if (nb !=null ) Log.d(TAG,"nb = "+ nb);
-        if (state !=null ) Log.d(TAG,"state = "+ state);
-        if (volume !=null ) Log.d(TAG,"volume = "+ volume);
-        Log.i(TAG,">DUMP END<");
+
+    private void dump() {
+        Log.i(TAG, ">DUMP START<");
+        if (session != null) Log.d(TAG, "session = " + session);
+        if (notification != null) Log.d(TAG, "notification = " + notification);
+        if (pb != null) Log.d(TAG, "pb = " + pb);
+        if (nb != null) Log.d(TAG, "nb = " + nb);
+        if (state != null) Log.d(TAG, "state = " + state);
+        if (volume != null) Log.d(TAG, "volume = " + volume);
+        Log.i(TAG, ">DUMP END<");
     }
 
     @Override
     public void onTrimMemory(int level) {
         switch (level) {
-        // Trims memory when it reaches a moderate level and the session is inactive
-        case ComponentCallbacks2.TRIM_MEMORY_MODERATE:
-        case ComponentCallbacks2.TRIM_MEMORY_RUNNING_MODERATE:
-            if (session !=null && session.isActive())
+            // Trims memory when it reaches a moderate level and the session is inactive
+            case ComponentCallbacks2.TRIM_MEMORY_MODERATE:
+            case ComponentCallbacks2.TRIM_MEMORY_RUNNING_MODERATE:
+                if (session != null && session.isActive())
+                    break;
+
+                // Trims memory when it reaches a critical level
+            case ComponentCallbacks2.TRIM_MEMORY_COMPLETE:
+            case ComponentCallbacks2.TRIM_MEMORY_RUNNING_CRITICAL:
+
+                Log.e(TAG, "Control resources are being removed due to system's low memory (Level: " + level + ")");
+
+                destroy();
                 break;
-
-            // Trims memory when it reaches a critical level
-        case ComponentCallbacks2.TRIM_MEMORY_COMPLETE:
-        case ComponentCallbacks2.TRIM_MEMORY_RUNNING_CRITICAL:
-
-            Log.e(TAG, "Control resources are being removed due to system's low memory (Level: " + level + ")");
-
-            destroy();
-            break;
         }
     }
 

@@ -1,5 +1,4 @@
-package com.lockscreen;
-
+package com.brentvatne.lockscreen;
 
 import com.facebook.react.ReactPackage;
 import com.facebook.react.bridge.NativeModule;
@@ -16,7 +15,6 @@ public class MusicControlPackage implements ReactPackage {
         List<NativeModule> modules = new ArrayList<>();
         modules.add(new MusicControlModule(reactContext));
         return modules;
-
     }
 
     @Override
