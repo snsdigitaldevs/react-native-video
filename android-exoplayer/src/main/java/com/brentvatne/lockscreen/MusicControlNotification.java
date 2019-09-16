@@ -1,27 +1,27 @@
-package com.lockscreen;
+package com.brentvatne.lockscreen;
 
 import android.app.Notification;
-import android.app.NotificationChannel;
-import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.app.Service;
-import android.content.Context;
 import android.content.Intent;
 import android.content.res.Resources;
 import android.os.Build;
 import android.os.IBinder;
-import android.support.v4.app.NotificationManagerCompat;
+
+import androidx.core.app.NotificationManagerCompat;
+
 import android.support.v4.media.session.PlaybackStateCompat;
-import android.support.v4.app.NotificationCompat;
+
+import androidx.core.app.NotificationCompat;
+
 import android.util.Log;
 import android.view.KeyEvent;
+
 import com.facebook.react.bridge.ReactApplicationContext;
-import com.facebook.react.bridge.ReadableMap;
 
 import java.util.Map;
 
-import static android.support.v4.app.NotificationCompat.PRIORITY_MIN;
-import static com.lockscreen.MusicControlModule.NOTIFICATION_ID;
+import static com.brentvatne.lockscreen.MusicControlModule.NOTIFICATION_ID;
 
 public class MusicControlNotification {
 
@@ -46,11 +46,11 @@ public class MusicControlNotification {
 
         // Optional custom icon with fallback to the play icon
         smallIcon = r.getIdentifier("music_control_icon", "drawable", packageName);
-        if(smallIcon == 0) smallIcon = r.getIdentifier("play", "drawable", packageName);
+        if (smallIcon == 0) smallIcon = r.getIdentifier("play", "drawable", packageName);
     }
 
     public synchronized void setCustomNotificationIcon(String resourceName) {
-        if(resourceName == null) {
+        if (resourceName == null) {
             customIcon = 0;
             return;
         }
@@ -86,18 +86,18 @@ public class MusicControlNotification {
     public synchronized Notification prepareNotification(NotificationCompat.Builder builder, boolean isPlaying) {
         // Add the buttons
         builder.mActions.clear();
-        if(previous != null) builder.addAction(previous);
-        if(skipBackward != null) builder.addAction(skipBackward);
-        if(play != null && !isPlaying) builder.addAction(play);
-        if(pause != null && isPlaying) builder.addAction(pause);
-        if(stop != null) builder.addAction(stop);
-        if(next != null) builder.addAction(next);
-        if(skipForward != null) builder.addAction(skipForward);
+        if (previous != null) builder.addAction(previous);
+        if (skipBackward != null) builder.addAction(skipBackward);
+        if (play != null && !isPlaying) builder.addAction(play);
+        if (pause != null && isPlaying) builder.addAction(pause);
+        if (stop != null) builder.addAction(stop);
+        if (next != null) builder.addAction(next);
+        if (skipForward != null) builder.addAction(skipForward);
 
         // Set whether notification can be closed based on closeNotification control (default PAUSED)
-        if(module.notificationClose == MusicControlModule.NotificationClose.ALWAYS) {
+        if (module.notificationClose == MusicControlModule.NotificationClose.ALWAYS) {
             builder.setOngoing(false);
-        } else if(module.notificationClose == MusicControlModule.NotificationClose.PAUSED) {
+        } else if (module.notificationClose == MusicControlModule.NotificationClose.PAUSED) {
             builder.setOngoing(isPlaying);
         } else { // NotificationClose.NEVER
             builder.setOngoing(false);
@@ -115,9 +115,9 @@ public class MusicControlNotification {
         Intent remove = new Intent(REMOVE_NOTIFICATION);
         remove.putExtra(PACKAGE_NAME, context.getApplicationInfo().packageName);
         builder.setDeleteIntent(PendingIntent.getBroadcast(context, 0, remove, PendingIntent.FLAG_UPDATE_CURRENT));
-        if (MusicControlModule.INSTANCE!=null
-            &&MusicControlModule.INSTANCE.getRealArtWork()!=null
-            && MusicControlModule.INSTANCE.getRealArtWork().isRecycled()){
+        if (MusicControlModule.INSTANCE != null
+                && MusicControlModule.INSTANCE.getRealArtWork() != null
+                && MusicControlModule.INSTANCE.getRealArtWork().isRecycled()) {
             return null;
         }
 
@@ -126,8 +126,8 @@ public class MusicControlNotification {
 
     public synchronized void show(NotificationCompat.Builder builder, boolean isPlaying) {
         Notification notification = prepareNotification(builder, isPlaying);
-        Log.d(TAG,"notification="+ notification);
-        if (notification !=null ) {
+        Log.d(TAG, "notification=" + notification);
+        if (notification != null) {
             NotificationManagerCompat.from(context).notify(NOTIFICATION_ID, notification);
         }
     }
@@ -135,7 +135,7 @@ public class MusicControlNotification {
     public void hide() {
         NotificationManagerCompat.from(context).cancel(NOTIFICATION_ID);
 
-        if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.O){ //TODO up to O
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) { //TODO up to O
 
             Intent myIntent = new Intent(context, MusicControlNotification.NotificationService.class);
             context.stopService(myIntent);
@@ -144,8 +144,9 @@ public class MusicControlNotification {
     }
 
     private NotificationCompat.Action createAction(String iconName, String title, long mask, long action, NotificationCompat.Action oldAction) {
-        if((mask & action) == 0) return null; // When this action is not enabled, return null
-        if(oldAction != null) return oldAction; // If this action was already created, we won't create another instance
+        if ((mask & action) == 0) return null; // When this action is not enabled, return null
+        if (oldAction != null)
+            return oldAction; // If this action was already created, we won't create another instance
 
         // Finds the icon with the given name
         Resources r = context.getResources();
@@ -173,10 +174,10 @@ public class MusicControlNotification {
         public void onCreate() {
             super.onCreate();
 
-            if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.O && MusicControlModule.INSTANCE !=null &&
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O && MusicControlModule.INSTANCE != null &&
                     MusicControlModule.INSTANCE.notification != null) { // TODO up to o
-                Notification notification = MusicControlModule.INSTANCE.notification.prepareNotification(MusicControlModule.INSTANCE.nb,false);
-                if (notification !=null ) {
+                Notification notification = MusicControlModule.INSTANCE.notification.prepareNotification(MusicControlModule.INSTANCE.nb, false);
+                if (notification != null) {
                     startForeground(NOTIFICATION_ID, notification);
                 }
             } else {
@@ -192,10 +193,10 @@ public class MusicControlNotification {
         @Override
         public void onTaskRemoved(Intent rootIntent) {
             // Destroy the notification and sessions when the task is removed (closed, killed, etc)
-            if(MusicControlModule.INSTANCE != null) {
+            if (MusicControlModule.INSTANCE != null) {
                 MusicControlModule.INSTANCE.destroy();
             }
-            if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
                 stopForeground(true);
             }
             stopSelf(); // Stop the service as we won't need it anymore
