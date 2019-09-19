@@ -14,20 +14,22 @@ import android.widget.FrameLayout;
 
 import com.google.android.exoplayer2.C;
 import com.google.android.exoplayer2.ExoPlaybackException;
-import com.google.android.exoplayer2.ExoPlayer;
 import com.google.android.exoplayer2.PlaybackParameters;
+import com.google.android.exoplayer2.Player;
 import com.google.android.exoplayer2.SimpleExoPlayer;
 import com.google.android.exoplayer2.Timeline;
 import com.google.android.exoplayer2.source.TrackGroupArray;
 import com.google.android.exoplayer2.text.Cue;
-import com.google.android.exoplayer2.text.TextRenderer;
 import com.google.android.exoplayer2.trackselection.TrackSelectionArray;
 import com.google.android.exoplayer2.ui.SubtitleView;
+import com.google.android.exoplayer2.video.VideoListener;
+import com.google.android.exoplayer2.text.TextOutput;
 
 import java.util.List;
 
 @TargetApi(16)
 public final class ExoPlayerView extends FrameLayout {
+    private static final String TAG = ExoPlayerView.class.getSimpleName();
 
     private View surfaceView;
     private final View shutterView;
@@ -123,8 +125,8 @@ public final class ExoPlayerView extends FrameLayout {
             return;
         }
         if (this.player != null) {
-            this.player.setTextOutput(null);
-            this.player.setVideoListener(null);
+            this.player.addTextOutput(null);
+            this.player.addVideoListener(null);
             this.player.removeListener(componentListener);
             this.player.setVideoSurface(null);
         }
@@ -132,9 +134,9 @@ public final class ExoPlayerView extends FrameLayout {
         shutterView.setVisibility(VISIBLE);
         if (player != null) {
             setVideoView();
-            player.setVideoListener(componentListener);
+            player.addVideoListener(componentListener);
             player.addListener(componentListener);
-            player.setTextOutput(componentListener);
+            player.addTextOutput(componentListener);
         }
     }
 
@@ -149,16 +151,6 @@ public final class ExoPlayerView extends FrameLayout {
             post(measureAndLayout);
         }
 
-    }
-
-    /**
-     * Get the view onto which video is rendered. This is either a {@link SurfaceView} (default)
-     * or a {@link TextureView} if the {@code use_texture_view} view attribute has been set to true.
-     *
-     * @return either a {@link SurfaceView} or a {@link TextureView}.
-     */
-    public View getVideoSurfaceView() {
-        return surfaceView;
     }
 
     public void setUseTextureView(boolean useTextureView) {
@@ -199,8 +191,8 @@ public final class ExoPlayerView extends FrameLayout {
         shutterView.setVisibility(VISIBLE);
     }
 
-    private final class ComponentListener implements SimpleExoPlayer.VideoListener,
-            TextRenderer.Output, ExoPlayer.EventListener {
+    private final class ComponentListener implements VideoListener,
+            TextOutput, Player.EventListener {
 
         // TextRenderer.Output implementation
 
