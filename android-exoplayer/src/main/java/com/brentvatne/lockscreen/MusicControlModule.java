@@ -1,5 +1,6 @@
 package com.brentvatne.lockscreen;
 
+import android.app.Notification;
 import android.app.NotificationManager;
 import android.app.NotificationChannel;
 import android.content.ComponentCallbacks2;
@@ -117,7 +118,38 @@ public class MusicControlModule extends ReactContextBaseJavaModule implements Co
         mChannel.setLockscreenVisibility(NotificationCompat.VISIBILITY_PUBLIC);
         mNotificationManager.createNotificationChannel(mChannel);
     }
+    private boolean hasControl(long control) {
+        if((controls & control) == control) {
+            return true;
+        }
+        return false;
+    }
 
+    private void updateNotificationMediaStyle() {
+        if (!(Build.MANUFACTURER.toLowerCase(Locale.getDefault()).contains("huawei")
+                && Build.VERSION.SDK_INT < Build.VERSION_CODES.M)) {
+            MediaStyle style = new MediaStyle();
+            style.setMediaSession(session.getSessionToken());
+            int controlCount = 0;
+            if(hasControl(PlaybackStateCompat.ACTION_PLAY)
+                    || hasControl(PlaybackStateCompat.ACTION_PAUSE)
+                    || hasControl(PlaybackStateCompat.ACTION_PLAY_PAUSE)) {
+                controlCount += 1;
+            }
+            if(hasControl(PlaybackStateCompat.ACTION_SKIP_TO_NEXT)) {
+                controlCount += 1;
+            }
+            if(hasControl(PlaybackStateCompat.ACTION_SKIP_TO_PREVIOUS)) {
+                controlCount += 1;
+            }
+            int[] actions = new int[controlCount];
+            for(int i=0; i<actions.length; i++) {
+                actions[i] = i;
+            }
+            style.setShowActionsInCompactView(actions);
+            nb.setStyle(style);
+        }
+    }
     private void init() {
         if (init)
             return;
@@ -126,8 +158,8 @@ public class MusicControlModule extends ReactContextBaseJavaModule implements Co
 
         context = getReactApplicationContext();
 
+        //TODO for Samsung use "public MediaSessionCompat(Context context, String tag) "
         ComponentName compName = new ComponentName(context, MusicControlReceiver.class);
-
         session = new MediaSessionCompat(context, "MusicControl", compName, null);
         session.setFlags(
                 MediaSessionCompat.FLAG_HANDLES_MEDIA_BUTTONS | MediaSessionCompat.FLAG_HANDLES_TRANSPORT_CONTROLS);
@@ -148,11 +180,9 @@ public class MusicControlModule extends ReactContextBaseJavaModule implements Co
             createChannel(context);
         }
         nb = new NotificationCompat.Builder(context, CHANNEL_ID);
+        nb.setVisibility(NotificationCompat.VISIBILITY_PUBLIC);
 
-        if (!(Build.MANUFACTURER.toLowerCase(Locale.getDefault()).contains("huawei")
-                && Build.VERSION.SDK_INT < Build.VERSION_CODES.M)) {
-            nb.setStyle(new MediaStyle().setMediaSession(session.getSessionToken()));
-        }
+        updateNotificationMediaStyle();
 
         state = pb.build();
 
@@ -183,9 +213,9 @@ public class MusicControlModule extends ReactContextBaseJavaModule implements Co
     }
 
     @ReactMethod
-    public void stopControl() {
+    public synchronized void stopControl() {
         Intent myIntent = new Intent();
-        myIntent.setComponent(new ComponentName("com.thoughtworks.pimsleur.unlimited.development",
+        myIntent.setComponent(new ComponentName(context.getPackageName(),
                 "com.brentvatne.lockscreen.MusicControlNotification$NotificationService"));
         if (getReactApplicationContext() != null)
             getReactApplicationContext().stopService(myIntent);
@@ -240,6 +270,12 @@ public class MusicControlModule extends ReactContextBaseJavaModule implements Co
         int notificationColor = metadata.hasKey("color") ? metadata.getInt("color") : NotificationCompat.COLOR_DEFAULT;
         String notificationIcon = metadata.hasKey("notificationIcon") ? metadata.getString("notificationIcon") : null;
 
+        // If a color is supplied, we need to clear the MediaStyle set during init().
+        // Otherwise, the color will not be used for the notification's background.
+        boolean removeFade = metadata.hasKey("color");
+        if(removeFade) {
+            nb.setStyle(new MediaStyle());
+        }
         RatingCompat rating;
         if (metadata.hasKey("rating")) {
             if (ratingType == RatingCompat.RATING_PERCENTAGE) {
@@ -360,7 +396,11 @@ public class MusicControlModule extends ReactContextBaseJavaModule implements Co
         state = pb.build();
         session.setPlaybackState(state);
 
-        session.setRatingType(ratingType);
+        updateNotificationMediaStyle();
+
+        if(session.isActive()) {
+            notification.show(nb, isPlaying);
+        }
 
         if (remoteVolume) {
             session.setPlaybackToRemote(volume.create(null, maxVol, vol));

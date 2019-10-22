@@ -164,6 +164,9 @@ public class MusicControlNotification {
     }
 
     public static class NotificationService extends Service {
+        public static final String STOP_SERVICE="StopService";
+        private boolean isRunning;
+        private Notification notification;
 
         @Override
         public IBinder onBind(Intent intent) {
@@ -176,9 +179,10 @@ public class MusicControlNotification {
 
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O && MusicControlModule.INSTANCE != null &&
                     MusicControlModule.INSTANCE.notification != null) { // TODO up to o
-                Notification notification = MusicControlModule.INSTANCE.notification.prepareNotification(MusicControlModule.INSTANCE.nb, false);
+                notification = MusicControlModule.INSTANCE.notification.prepareNotification(MusicControlModule.INSTANCE.nb, false);
                 if (notification != null) {
                     startForeground(NOTIFICATION_ID, notification);
+                    isRunning = true;
                 }
             } else {
                 //TODO
@@ -187,12 +191,20 @@ public class MusicControlNotification {
 
         @Override
         public int onStartCommand(Intent intent, int flags, int startId) {
-            return START_STICKY;
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                if (intent.getAction() != null && intent.getAction().equals(STOP_SERVICE) && notification != null && isRunning) {
+                    stopForeground(true);
+                    isRunning = false;
+                    stopSelf();
+                }
+            }
+            return START_NOT_STICKY;
         }
 
         @Override
         public void onTaskRemoved(Intent rootIntent) {
             // Destroy the notification and sessions when the task is removed (closed, killed, etc)
+            isRunning = false;
             if (MusicControlModule.INSTANCE != null) {
                 MusicControlModule.INSTANCE.destroy();
             }
@@ -202,6 +214,17 @@ public class MusicControlNotification {
             stopSelf(); // Stop the service as we won't need it anymore
         }
 
+        @Override
+        public void onDestroy() {
+            isRunning = false;
+            if (MusicControlModule.INSTANCE != null) {
+                MusicControlModule.INSTANCE.destroy();
+            }
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                stopForeground(true);
+            }
+            stopSelf();
+        }
     }
 
 }
