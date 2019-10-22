@@ -82,11 +82,12 @@ RCT_EXPORT_METHOD(updatePlayback:(NSDictionary *) originalDetails)
     }
 
     NSMutableDictionary *details = [originalDetails mutableCopy];
+    NSString *state = [details objectForKey:MEDIA_STATE];
 
     // Set the playback rate from the state if no speed has been defined
     // If they provide the speed, then use it
-    if ([details objectForKey:MEDIA_STATE] != nil && [details objectForKey:MEDIA_SPEED] == nil) {
-        NSNumber *speed = [[details objectForKey:MEDIA_STATE] isEqual:MEDIA_STATE_PAUSED]
+    if (state != nil && [details objectForKey:MEDIA_SPEED] == nil) {
+        NSNumber *speed = [state isEqual:MEDIA_STATE_PAUSED]
         ? [NSNumber numberWithDouble:0]
         : [NSNumber numberWithDouble:1];
 
@@ -94,7 +95,7 @@ RCT_EXPORT_METHOD(updatePlayback:(NSDictionary *) originalDetails)
     }
 
     
-    if ([[details objectForKey:MEDIA_STATE] isEqual:MEDIA_STATE_STOPPED]) {
+    if ([state isEqual:MEDIA_STATE_STOPPED]) {
 
         MPRemoteCommandCenter *remoteCenter = [MPRemoteCommandCenter sharedCommandCenter];
         [self toggleHandler:remoteCenter.stopCommand withSelector:@selector(onStop:) enabled:false];
@@ -103,6 +104,16 @@ RCT_EXPORT_METHOD(updatePlayback:(NSDictionary *) originalDetails)
     NSMutableDictionary *mediaDict = [[NSMutableDictionary alloc] initWithDictionary: center.nowPlayingInfo];
 
     center.nowPlayingInfo = [self update:mediaDict with:details andSetDefaults:false];
+    // Playback state is separated in 11+
+    if (@available(iOS 11.0, *)) {
+        if ([state isEqual:MEDIA_STATE_PLAYING]) {
+            center.playbackState = MPNowPlayingPlaybackStatePlaying;
+        } else if ([state isEqual:MEDIA_STATE_PAUSED]) {
+            center.playbackState = MPNowPlayingPlaybackStatePaused;
+        } else if ([state isEqual:MEDIA_STATE_STOPPED]) {
+            center.playbackState = MPNowPlayingPlaybackStateStopped;
+        }
+    }
 
     NSString *artworkUrl = [self getArtworkUrl:[originalDetails objectForKey:@"artwork"]];
     if (![artworkUrl isEqualToString:self.artworkUrl] && artworkUrl != nil) {
@@ -254,6 +265,7 @@ RCT_EXPORT_METHOD(observeHeadsetPlayPause:(BOOL) observe) {
 - (id)init {
     self = [super init];
     [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(audioHardwareRouteChanged:) name:AVAudioSessionRouteChangeNotification object:nil];
+    [[UIApplication sharedApplication] beginReceivingRemoteControlEvents];
     self.audioInterruptionsObserved = false;
     return self;
 }
@@ -288,23 +300,57 @@ RCT_EXPORT_METHOD(observeHeadsetPlayPause:(BOOL) observe) {
     [[NSNotificationCenter defaultCenter] removeObserver:self name:AVAudioSessionRouteChangeNotification object:nil];
 }
 
-- (void)onPause:(MPRemoteCommandEvent*)event {
-    [self sendEvent:@"pause"]; }
-- (void)onPlay:(MPRemoteCommandEvent*)event {}
-- (void)onChangePlaybackPosition:(MPChangePlaybackPositionCommandEvent*)event { [self sendEventWithValue:@"changePlaybackPosition" withValue:[NSString stringWithFormat:@"%.15f", event.positionTime]]; }
-- (void)onStop:(MPRemoteCommandEvent*)event { [self sendEvent:@"stop"]; }
-- (void)onTogglePlayPause:(MPRemoteCommandEvent*)event {
-    [self sendEvent:@"togglePlayPause"];
-
+- (MPRemoteCommandHandlerStatus)onPause:(MPRemoteCommandEvent*)event {
+    [self sendEvent:@"pause"];
+    return MPRemoteCommandHandlerStatusSuccess;
 }
-- (void)onEnableLanguageOption:(MPRemoteCommandEvent*)event { [self sendEvent:@"enableLanguageOption"]; }
-- (void)onDisableLanguageOption:(MPRemoteCommandEvent*)event { [self sendEvent:@"disableLanguageOption"]; }
-- (void)onNextTrack:(MPRemoteCommandEvent*)event { [self sendEvent:@"nextTrack"]; }
-- (void)onPreviousTrack:(MPRemoteCommandEvent*)event { [self sendEvent:@"previousTrack"]; }
-- (void)onSeekForward:(MPRemoteCommandEvent*)event { [self sendEvent:@"seekForward"]; }
-- (void)onSeekBackward:(MPRemoteCommandEvent*)event { [self sendEvent:@"seekBackward"]; }
-- (void)onSkipBackward:(MPRemoteCommandEvent*)event { [self sendEvent:@"skipBackward"]; }
-- (void)onSkipForward:(MPRemoteCommandEvent*)event { [self sendEvent:@"skipForward"]; }
+- (MPRemoteCommandHandlerStatus)onPlay:(MPRemoteCommandEvent*)event {
+    [self sendEvent:@"play"];
+    return MPRemoteCommandHandlerStatusSuccess;
+}
+- (MPRemoteCommandHandlerStatus)onChangePlaybackPosition:(MPChangePlaybackPositionCommandEvent*)event { [self sendEventWithValue:@"changePlaybackPosition" withValue:[NSString stringWithFormat:@"%.15f", event.positionTime]];
+    return MPRemoteCommandHandlerStatusSuccess;
+}
+- (MPRemoteCommandHandlerStatus)onStop:(MPRemoteCommandEvent*)event {
+    [self sendEvent:@"stop"];
+    return MPRemoteCommandHandlerStatusSuccess;
+}
+- (MPRemoteCommandHandlerStatus)onTogglePlayPause:(MPRemoteCommandEvent*)event {
+    [self sendEvent:@"togglePlayPause"];
+    return MPRemoteCommandHandlerStatusSuccess;
+}
+- (MPRemoteCommandHandlerStatus)onEnableLanguageOption:(MPRemoteCommandEvent*)event {
+    [self sendEvent:@"enableLanguageOption"];
+    return MPRemoteCommandHandlerStatusSuccess;
+}
+- (MPRemoteCommandHandlerStatus)onDisableLanguageOption:(MPRemoteCommandEvent*)event {
+    [self sendEvent:@"disableLanguageOption"];
+    return MPRemoteCommandHandlerStatusSuccess;
+}
+- (MPRemoteCommandHandlerStatus)onNextTrack:(MPRemoteCommandEvent*)event {
+    [self sendEvent:@"nextTrack"];
+    return MPRemoteCommandHandlerStatusSuccess;
+}
+- (MPRemoteCommandHandlerStatus)onPreviousTrack:(MPRemoteCommandEvent*)event {
+    [self sendEvent:@"previousTrack"];
+    return MPRemoteCommandHandlerStatusSuccess;
+}
+- (MPRemoteCommandHandlerStatus)onSeekForward:(MPRemoteCommandEvent*)event {
+    [self sendEvent:@"seekForward"];
+    return MPRemoteCommandHandlerStatusSuccess;
+}
+- (MPRemoteCommandHandlerStatus)onSeekBackward:(MPRemoteCommandEvent*)event {
+    [self sendEvent:@"seekBackward"];
+    return MPRemoteCommandHandlerStatusSuccess;
+}
+- (MPRemoteCommandHandlerStatus)onSkipBackward:(MPRemoteCommandEvent*)event {
+    [self sendEvent:@"skipBackward"];
+    return MPRemoteCommandHandlerStatusSuccess;
+}
+- (MPRemoteCommandHandlerStatus)onSkipForward:(MPRemoteCommandEvent*)event {
+    [self sendEvent:@"skipForward"];
+    return MPRemoteCommandHandlerStatusSuccess;
+}
 
 - (NSArray<NSString *> *)supportedEvents {
     return @[@"RNMusicControlEvent"];
@@ -399,8 +445,11 @@ RCT_EXPORT_METHOD(observeHeadsetPlayPause:(BOOL) observe) {
     }
     NSInteger interruptionType = [notification.userInfo[AVAudioSessionInterruptionTypeKey] integerValue];
     NSInteger interruptionOption = [notification.userInfo[AVAudioSessionInterruptionOptionKey] integerValue];
-    if (interruptionType == AVAudioSessionInterruptionTypeBegan) {
+    bool delayedSuspendedNotification = (@available(iOS 10.0, *)) && [notification.userInfo[AVAudioSessionInterruptionWasSuspendedKey] boolValue];
+
+    if (interruptionType == AVAudioSessionInterruptionTypeBegan && !delayedSuspendedNotification) {
         // Playback interrupted by an incoming phone call.
+        //https://developer.apple.com/documentation/avfoundation/avaudiosession/1616596-interruptionnotification
         [self sendEvent:@"pause"];
     }
     if (interruptionType == AVAudioSessionInterruptionTypeEnded &&
