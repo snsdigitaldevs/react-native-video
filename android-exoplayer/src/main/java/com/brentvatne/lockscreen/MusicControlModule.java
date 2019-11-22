@@ -230,8 +230,12 @@ public class MusicControlModule extends ReactContextBaseJavaModule implements Co
         if (session != null)
             session.release();
 
-        if (receiver != null) {
-            context.unregisterReceiver(receiver);
+        try {
+            if (receiver != null) {
+                context.unregisterReceiver(receiver);
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
         }
         context.unregisterComponentCallbacks(this);
 
