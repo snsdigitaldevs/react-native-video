@@ -214,6 +214,9 @@ public class MusicControlModule extends ReactContextBaseJavaModule implements Co
 
     @ReactMethod
     public synchronized void stopControl() {
+        if (context == null) {
+            context = getReactApplicationContext();
+        }
         Intent myIntent = new Intent();
         myIntent.setComponent(new ComponentName(context.getPackageName(),
                 "com.brentvatne.lockscreen.MusicControlNotification$NotificationService"));
@@ -226,8 +229,6 @@ public class MusicControlModule extends ReactContextBaseJavaModule implements Co
             notification.hide();
         if (session != null)
             session.release();
-
-        ReactApplicationContext context = getReactApplicationContext();
 
         if (receiver != null) {
             context.unregisterReceiver(receiver);
