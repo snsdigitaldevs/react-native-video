@@ -124,6 +124,7 @@ class ReactExoplayerView extends FrameLayout implements
     private boolean isInBackground;
     private boolean isPaused;
     private boolean isBuffering;
+    private boolean muted = false;
     private float rate = 1f;
     private float audioVolume = 1f;
     private int minLoadRetryCount = 3;
@@ -684,10 +685,14 @@ class ReactExoplayerView extends FrameLayout implements
         if (player != null) {
             if (focusChange == AudioManager.AUDIOFOCUS_LOSS_TRANSIENT_CAN_DUCK) {
                 // Lower the volume
-                player.setVolume(audioVolume * 0.8f);
+                if (!muted) {
+                    player.setVolume(audioVolume * 0.8f);
+                }
             } else if (focusChange == AudioManager.AUDIOFOCUS_GAIN) {
                 // Raise it back to normal
-                player.setVolume(audioVolume * 1);
+                if (!muted) {
+                    player.setVolume(audioVolume * 1);
+                }
             }
         }
     }
@@ -1037,6 +1042,7 @@ class ReactExoplayerView extends FrameLayout implements
 
     private void applyModifiers() {
         setRepeatModifier(repeat);
+        setMutedModifier(muted);
     }
 
     public void setRepeatModifier(boolean repeat) {
@@ -1194,6 +1200,7 @@ class ReactExoplayerView extends FrameLayout implements
     }
 
     public void setMutedModifier(boolean muted) {
+        this.muted = muted;
         audioVolume = muted ? 0.f : 1.f;
         if (player != null) {
             player.setVolume(audioVolume);
