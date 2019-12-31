@@ -983,46 +983,48 @@ static int const RCTVideoUnset = -1;
 - (void)setMediaSelectionTrackForCharacteristic:(AVMediaCharacteristic)characteristic
                                    withCriteria:(NSDictionary *)criteria
 {
-    NSString *type = criteria[@"type"];
-    AVMediaSelectionGroup *group = [_player.currentItem.asset
-                                    mediaSelectionGroupForMediaCharacteristic:characteristic];
-    AVMediaSelectionOption *mediaOption;
-  
-    if ([type isEqualToString:@"disabled"]) {
-      // Do nothing. We want to ensure option is nil
-    } else if ([type isEqualToString:@"language"] || [type isEqualToString:@"title"]) {
-        NSString *value = criteria[@"value"];
-        for (int i = 0; i < group.options.count; ++i) {
-            AVMediaSelectionOption *currentOption = [group.options objectAtIndex:i];
-            NSString *optionValue;
-            if ([type isEqualToString:@"language"]) {
-              optionValue = [currentOption extendedLanguageTag];
-            } else {
-              optionValue = [[[currentOption commonMetadata]
-                              valueForKey:@"value"]
-                             objectAtIndex:0];
+    dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
+        NSString *type = criteria[@"type"];
+          AVMediaSelectionGroup *group = [_player.currentItem.asset
+                                          mediaSelectionGroupForMediaCharacteristic:characteristic];
+          AVMediaSelectionOption *mediaOption;
+        
+          if ([type isEqualToString:@"disabled"]) {
+            // Do nothing. We want to ensure option is nil
+          } else if ([type isEqualToString:@"language"] || [type isEqualToString:@"title"]) {
+              NSString *value = criteria[@"value"];
+              for (int i = 0; i < group.options.count; ++i) {
+                  AVMediaSelectionOption *currentOption = [group.options objectAtIndex:i];
+                  NSString *optionValue;
+                  if ([type isEqualToString:@"language"]) {
+                    optionValue = [currentOption extendedLanguageTag];
+                  } else {
+                    optionValue = [[[currentOption commonMetadata]
+                                    valueForKey:@"value"]
+                                   objectAtIndex:0];
+                  }
+                  if ([value isEqualToString:optionValue]) {
+                    mediaOption = currentOption;
+                    break;
+                  }
             }
-            if ([value isEqualToString:optionValue]) {
-              mediaOption = currentOption;
-              break;
-            }
-      }
-      //} else if ([type isEqualToString:@"default"]) {
-      //  option = group.defaultOption; */
-    } else if ([type isEqualToString:@"index"]) {
-        if ([criteria[@"value"] isKindOfClass:[NSNumber class]]) {
-          int index = [criteria[@"value"] intValue];
-          if (group.options.count > index) {
-            mediaOption = [group.options objectAtIndex:index];
+            //} else if ([type isEqualToString:@"default"]) {
+            //  option = group.defaultOption; */
+          } else if ([type isEqualToString:@"index"]) {
+              if ([criteria[@"value"] isKindOfClass:[NSNumber class]]) {
+                int index = [criteria[@"value"] intValue];
+                if (group.options.count > index) {
+                  mediaOption = [group.options objectAtIndex:index];
+                }
+              }
+          } else { // default. invalid type or "system"
+            [_player.currentItem selectMediaOptionAutomaticallyInMediaSelectionGroup:group];
+            return;
           }
-        }
-    } else { // default. invalid type or "system"
-      [_player.currentItem selectMediaOptionAutomaticallyInMediaSelectionGroup:group];
-      return;
-    }
-  
-    // If a match isn't found, option will be nil and text tracks will be disabled
-    [_player.currentItem selectMediaOption:mediaOption inMediaSelectionGroup:group];
+        
+          // If a match isn't found, option will be nil and text tracks will be disabled
+          [_player.currentItem selectMediaOption:mediaOption inMediaSelectionGroup:group];
+    });
 }
 
 - (void)setSelectedAudioTrack:(NSDictionary *)selectedAudioTrack {
