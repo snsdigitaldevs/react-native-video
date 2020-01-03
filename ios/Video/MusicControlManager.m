@@ -297,7 +297,6 @@ RCT_EXPORT_METHOD(observeHeadsetPlayPause:(BOOL) observe) {
     [self toggleHandler:remoteCenter.skipBackwardCommand withSelector:@selector(onSkipBackward:) enabled:false];
     [self toggleHandler:remoteCenter.skipForwardCommand withSelector:@selector(onSkipForward:) enabled:false];
     [self observeAudioInterruptions:false];
-    [[NSNotificationCenter defaultCenter] removeObserver:self name:AVAudioSessionRouteChangeNotification object:nil];
 }
 
 - (MPRemoteCommandHandlerStatus)onPause:(MPRemoteCommandEvent*)event {
