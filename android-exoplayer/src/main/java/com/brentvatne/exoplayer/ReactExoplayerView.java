@@ -655,10 +655,17 @@ class ReactExoplayerView extends FrameLayout implements
                     }
                     noticeToUpdateStatus(PlaybackStateCompat.ACTION_PLAY);
                     break;
-                case AudioManager.AUDIOFOCUS_LOSS:
-                case AudioManager.AUDIOFOCUS_LOSS_TRANSIENT:
                 case AudioManager.AUDIOFOCUS_LOSS_TRANSIENT_CAN_DUCK:
+                    if (null != player) {
+                        player.setVolume(audioVolume * 0.6f);
+                    }
+                    noticeToUpdateStatus(PlaybackStateCompat.ACTION_PLAY);
+                    break;
+                case AudioManager.AUDIOFOCUS_LOSS:
                     audioManager.abandonAudioFocusRequest(mFocusRequest);
+                    noticeToUpdateStatus(PlaybackStateCompat.ACTION_PAUSE);
+                    break;
+                case AudioManager.AUDIOFOCUS_LOSS_TRANSIENT:
                     noticeToUpdateStatus(PlaybackStateCompat.ACTION_PAUSE);
                     break;
             }
@@ -670,12 +677,14 @@ class ReactExoplayerView extends FrameLayout implements
         Log.d(TAG, " lower 26 2 onAudioFocusChanged = " + focusChange);
         switch (focusChange) {
             case AudioManager.AUDIOFOCUS_LOSS:
-            case AudioManager.AUDIOFOCUS_LOSS_TRANSIENT:
-            case AudioManager.AUDIOFOCUS_LOSS_TRANSIENT_CAN_DUCK:
                 audioManager.abandonAudioFocus(this);
                 noticeToUpdateStatus(PlaybackStateCompat.ACTION_PAUSE);
                 break;
+            case AudioManager.AUDIOFOCUS_LOSS_TRANSIENT:
+                noticeToUpdateStatus(PlaybackStateCompat.ACTION_PAUSE);
+                break;
             case AudioManager.AUDIOFOCUS_GAIN:
+            case AudioManager.AUDIOFOCUS_LOSS_TRANSIENT_CAN_DUCK:
                 noticeToUpdateStatus(PlaybackStateCompat.ACTION_PLAY);
                 break;
             default:
@@ -686,7 +695,7 @@ class ReactExoplayerView extends FrameLayout implements
             if (focusChange == AudioManager.AUDIOFOCUS_LOSS_TRANSIENT_CAN_DUCK) {
                 // Lower the volume
                 if (!muted) {
-                    player.setVolume(audioVolume * 0.8f);
+                    player.setVolume(audioVolume * 0.6f);
                 }
             } else if (focusChange == AudioManager.AUDIOFOCUS_GAIN) {
                 // Raise it back to normal
