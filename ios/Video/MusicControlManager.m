@@ -50,9 +50,9 @@
     @"chapterCount": MPNowPlayingInfoPropertyChapterCount \
 }
 
-@implementation MusicControlManager
+NSString *const kRemoteControlActionChangedNotification = @"RCTRemoteControlActionChangedNotification";
 
-@synthesize bridge = _bridge;
+@implementation MusicControlManager
 
 RCT_EXPORT_MODULE()
 
@@ -262,12 +262,26 @@ RCT_EXPORT_METHOD(observeHeadsetPlayPause:(BOOL) observe) {
     command.enabled = enabled;
 }
 
++ (instancetype)allocWithZone:(struct _NSZone *)zone {
+    static MusicControlManager *sharedInstance = nil;
+    static dispatch_once_t onceToken;
+    dispatch_once(&onceToken, ^{
+        sharedInstance = [super allocWithZone:zone];
+    });
+    return sharedInstance;
+}
+
 - (id)init {
     self = [super init];
-    [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(audioHardwareRouteChanged:) name:AVAudioSessionRouteChangeNotification object:nil];
-    [[UIApplication sharedApplication] beginReceivingRemoteControlEvents];
+    [self addObservers];
     self.audioInterruptionsObserved = false;
     return self;
+}
+
+- (void)addObservers {
+    [[NSNotificationCenter defaultCenter] removeObserver:self];
+    [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(audioHardwareRouteChanged:) name:AVAudioSessionRouteChangeNotification object:nil];
+    [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(remoteControlActionChanged:) name:kRemoteControlActionChangedNotification object:nil];
 }
 
 + (BOOL)requiresMainQueueSetup
@@ -277,7 +291,7 @@ RCT_EXPORT_METHOD(observeHeadsetPlayPause:(BOOL) observe) {
 
 - (void)dealloc {
     [self stop];
-    [[NSNotificationCenter defaultCenter] removeObserver:self name:AVAudioSessionRouteChangeNotification object:nil];
+    [[NSNotificationCenter defaultCenter] removeObserver:self];
 }
 
 - (void)stop {
@@ -454,6 +468,27 @@ RCT_EXPORT_METHOD(observeHeadsetPlayPause:(BOOL) observe) {
     if (interruptionType == AVAudioSessionInterruptionTypeEnded &&
            interruptionOption == AVAudioSessionInterruptionOptionShouldResume) {
         [self sendEvent:@"play"];
+    }
+}
+
+- (void)remoteControlActionChanged:(NSNotification *)notification {
+    NSNumber *obj = (NSNumber *)notification.object;
+    RCTRemoteControlAction actionType = obj.integerValue;
+    switch (actionType) {
+        case RCTRemoteControlActionPlay:
+            [self sendEvent:@"play"];
+            break;
+        case RCTRemoteControlActionPause:
+            [self sendEvent:@"pause"];
+            break;
+        case RCTRemoteControlActionTogglePlayPause:
+            [self sendEvent:@"togglePlayPause"];
+            break;
+        case RCTRemoteControlActionStop:
+            [self sendEvent:@"stop"];
+            break;
+        default:
+            break;
     }
 }
 

@@ -9,6 +9,19 @@
 #import <React/RCTEventEmitter.h>
 #import <MediaPlayer/MediaPlayer.h>
 
+extern NSString *const kRemoteControlActionChangedNotification;
+
+typedef NS_ENUM(NSInteger, RCTRemoteControlAction) {
+    RCTRemoteControlActionPlay,
+    RCTRemoteControlActionPause,
+    RCTRemoteControlActionTogglePlayPause,
+    RCTRemoteControlActionStop,
+    RCTRemoteControlActionNextTrack,
+    RCTRemoteControlActionPreviousTrack,
+    RCTRemoteControlActionSeekForward,
+    RCTRemoteControlActionSeekBackward,
+};
+
 @interface MusicControlManager : RCTEventEmitter <RCTBridgeModule>
 
 @end
