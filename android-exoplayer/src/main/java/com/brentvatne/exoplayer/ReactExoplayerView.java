@@ -650,22 +650,25 @@ class ReactExoplayerView extends FrameLayout implements
             }
             switch (focusChange) {
                 case AudioManager.AUDIOFOCUS_GAIN:
-                    if (null != player) {
-                        player.setVolume(1);
+                    if (null != player && !muted) {
+                        player.setVolume(audioVolume * 1);
                     }
                     noticeToUpdateStatus(PlaybackStateCompat.ACTION_PLAY);
                     break;
                 case AudioManager.AUDIOFOCUS_LOSS_TRANSIENT_CAN_DUCK:
-                    if (null != player) {
-                        player.setVolume(audioVolume * 0.6f);
+                    if (isPaused) {
+                        audioManager.abandonAudioFocusRequest(mFocusRequest);
+                        noticeToUpdateStatus(PlaybackStateCompat.ACTION_PAUSE);
+                    } else {
+                        if (null != player && !muted) {
+                            player.setVolume(audioVolume * 0.6f);
+                        }
+                        noticeToUpdateStatus(PlaybackStateCompat.ACTION_PLAY);
                     }
-                    noticeToUpdateStatus(PlaybackStateCompat.ACTION_PLAY);
                     break;
                 case AudioManager.AUDIOFOCUS_LOSS:
-                    audioManager.abandonAudioFocusRequest(mFocusRequest);
-                    noticeToUpdateStatus(PlaybackStateCompat.ACTION_PAUSE);
-                    break;
                 case AudioManager.AUDIOFOCUS_LOSS_TRANSIENT:
+                    audioManager.abandonAudioFocusRequest(mFocusRequest);
                     noticeToUpdateStatus(PlaybackStateCompat.ACTION_PAUSE);
                     break;
             }
@@ -677,15 +680,20 @@ class ReactExoplayerView extends FrameLayout implements
         Log.d(TAG, " lower 26 2 onAudioFocusChanged = " + focusChange);
         switch (focusChange) {
             case AudioManager.AUDIOFOCUS_LOSS:
+            case AudioManager.AUDIOFOCUS_LOSS_TRANSIENT:
                 audioManager.abandonAudioFocus(this);
                 noticeToUpdateStatus(PlaybackStateCompat.ACTION_PAUSE);
                 break;
-            case AudioManager.AUDIOFOCUS_LOSS_TRANSIENT:
-                noticeToUpdateStatus(PlaybackStateCompat.ACTION_PAUSE);
-                break;
             case AudioManager.AUDIOFOCUS_GAIN:
-            case AudioManager.AUDIOFOCUS_LOSS_TRANSIENT_CAN_DUCK:
                 noticeToUpdateStatus(PlaybackStateCompat.ACTION_PLAY);
+                break;
+            case AudioManager.AUDIOFOCUS_LOSS_TRANSIENT_CAN_DUCK:
+                if (isPaused) {
+                    audioManager.abandonAudioFocus(this);
+                    noticeToUpdateStatus(PlaybackStateCompat.ACTION_PAUSE);
+                } else {
+                    noticeToUpdateStatus(PlaybackStateCompat.ACTION_PLAY);
+                }
                 break;
             default:
                 break;
