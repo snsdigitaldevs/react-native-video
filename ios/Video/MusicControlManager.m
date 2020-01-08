@@ -50,8 +50,6 @@
     @"chapterCount": MPNowPlayingInfoPropertyChapterCount \
 }
 
-NSString *const kRemoteControlActionChangedNotification = @"RCTRemoteControlActionChangedNotification";
-
 @implementation MusicControlManager
 
 RCT_EXPORT_MODULE()
@@ -105,7 +103,7 @@ RCT_EXPORT_METHOD(updatePlayback:(NSDictionary *) originalDetails)
 
     center.nowPlayingInfo = [self update:mediaDict with:details andSetDefaults:false];
     // Playback state is separated in 11+
-    if (@available(iOS 11.0, *)) {
+    if (@available(iOS 13.0, *)) {
         if ([state isEqual:MEDIA_STATE_PLAYING]) {
             center.playbackState = MPNowPlayingPlaybackStatePlaying;
         } else if ([state isEqual:MEDIA_STATE_PAUSED]) {
@@ -275,13 +273,13 @@ RCT_EXPORT_METHOD(observeHeadsetPlayPause:(BOOL) observe) {
     self = [super init];
     [self addObservers];
     self.audioInterruptionsObserved = false;
+    [[UIApplication sharedApplication] beginReceivingRemoteControlEvents];
     return self;
 }
 
 - (void)addObservers {
     [[NSNotificationCenter defaultCenter] removeObserver:self];
     [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(audioHardwareRouteChanged:) name:AVAudioSessionRouteChangeNotification object:nil];
-    [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(remoteControlActionChanged:) name:kRemoteControlActionChangedNotification object:nil];
 }
 
 + (BOOL)requiresMainQueueSetup
@@ -468,27 +466,6 @@ RCT_EXPORT_METHOD(observeHeadsetPlayPause:(BOOL) observe) {
     if (interruptionType == AVAudioSessionInterruptionTypeEnded &&
            interruptionOption == AVAudioSessionInterruptionOptionShouldResume) {
         [self sendEvent:@"play"];
-    }
-}
-
-- (void)remoteControlActionChanged:(NSNotification *)notification {
-    NSNumber *obj = (NSNumber *)notification.object;
-    RCTRemoteControlAction actionType = obj.integerValue;
-    switch (actionType) {
-        case RCTRemoteControlActionPlay:
-            [self sendEvent:@"play"];
-            break;
-        case RCTRemoteControlActionPause:
-            [self sendEvent:@"pause"];
-            break;
-        case RCTRemoteControlActionTogglePlayPause:
-            [self sendEvent:@"togglePlayPause"];
-            break;
-        case RCTRemoteControlActionStop:
-            [self sendEvent:@"stop"];
-            break;
-        default:
-            break;
     }
 }
 
