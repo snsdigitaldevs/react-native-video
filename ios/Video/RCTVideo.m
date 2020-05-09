@@ -713,7 +713,18 @@ static int const RCTVideoUnset = -1;
         return;
       }
   } else if ([super respondsToSelector:@selector(observeValueForKeyPath:ofObject:change:context:)]) {
-    [super observeValueForKeyPath:keyPath ofObject:object change:change context:context];
+    if ([keyPath isEqualToString:playbackBufferEmptyKeyPath]) {
+        _playerBufferEmpty = YES;
+        self.onVideoBuffer(@{@"isBuffering": @(YES), @"target": self.reactTag});
+    } else if ([keyPath isEqualToString:playbackLikelyToKeepUpKeyPath]) {
+        if ((!(_controls || _fullscreenPlayerPresented) || _playerBufferEmpty) && _playerItem.playbackLikelyToKeepUp) {
+          [self setPaused:_paused];
+        }
+        _playerBufferEmpty = NO;
+        self.onVideoBuffer(@{@"isBuffering": @(NO), @"target": self.reactTag});
+    } else {
+        [super observeValueForKeyPath:keyPath ofObject:object change:change context:context];
+    }
   }
 }
 
