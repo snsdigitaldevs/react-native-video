@@ -1359,7 +1359,11 @@ static int const RCTVideoUnset = -1;
 {
   [_playerLayer removeFromSuperlayer];
   if (_playerLayerObserverSet) {
-    [_playerLayer removeObserver:self forKeyPath:readyForDisplayKeyPath];
+    @try {
+        [_playerLayer removeObserver:self forKeyPath:readyForDisplayKeyPath];
+    } @catch (NSException *e) {
+        NSLog(@"_playerLayer remove observer exception.");
+    }
     _playerLayerObserverSet = NO;
   }
   _playerLayer = nil;
