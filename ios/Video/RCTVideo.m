@@ -956,22 +956,24 @@ static int const RCTVideoUnset = -1;
 
 - (void)applyModifiers
 {
-  if (_muted) {
-    if (!_controls) {
-      [_player setVolume:0];
+    if (_playerItem.status == AVPlayerItemStatusReadyToPlay) {
+        if (_muted) {
+          if (!_controls) {
+            [_player setVolume:0];
+          }
+          [_player setMuted:YES];
+        } else {
+          [_player setVolume:_volume];
+          [_player setMuted:NO];
+        }
+        [self setPaused:_paused];
     }
-    [_player setMuted:YES];
-  } else {
-    [_player setVolume:_volume];
-    [_player setMuted:NO];
-  }
   
   [self setMaxBitRate:_maxBitRate];
   [self setSelectedAudioTrack:_selectedAudioTrack];
   [self setSelectedTextTrack:_selectedTextTrack];
   [self setResizeMode:_resizeMode];
   [self setRepeat:_repeat];
-  [self setPaused:_paused];
   [self setControls:_controls];
   [self setAllowsExternalPlayback:_allowsExternalPlayback];
 }
