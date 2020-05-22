@@ -12,6 +12,7 @@
 #import <React/RCTBridge.h>
 #import <React/RCTEventDispatcher.h>
 #import <AVFoundation/AVFoundation.h>
+#import "SSImageManager.h"
 
 @import MediaPlayer;
 
@@ -114,10 +115,7 @@ RCT_EXPORT_METHOD(updatePlayback:(NSDictionary *) originalDetails)
     }
 
     NSString *artworkUrl = [self getArtworkUrl:[originalDetails objectForKey:@"artwork"]];
-    if (![artworkUrl isEqualToString:self.artworkUrl] && artworkUrl != nil) {
-        self.artworkUrl = artworkUrl;
-        [self updateArtworkIfNeeded:artworkUrl];
-    }
+    [self updateArtworkIfNeeded:artworkUrl];
 }
 
 
@@ -392,54 +390,42 @@ RCT_EXPORT_METHOD(observeHeadsetPlayPause:(BOOL) observe) {
 
 - (void)updateArtworkIfNeeded:(id)artworkUrl
 {
-    if (artworkUrl != nil) {
+    if (artworkUrl != nil && ![artworkUrl isEqualToString:@""] && ![artworkUrl isEqualToString:self.artworkUrl]) {
         self.artworkUrl = artworkUrl;
-
-        // Custom handling of artwork in another thread, will be loaded async
-        dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_BACKGROUND, 0), ^{
-            UIImage *image = nil;
-
-            // check whether artwork path is present
-            if (![artworkUrl isEqual: @""]) {
-                // artwork is url download from the interwebs
-                if ([artworkUrl hasPrefix: @"http://"] || [artworkUrl hasPrefix: @"https://"]) {
-                    NSURL *imageURL = [NSURL URLWithString:artworkUrl];
-                    NSData *imageData = [NSData dataWithContentsOfURL:imageURL];
-                    image = [UIImage imageWithData:imageData];
-                } else {
-                    NSString *localArtworkUrl = [artworkUrl stringByReplacingOccurrencesOfString:@"file://" withString:@""];
-                    BOOL fileExists = [[NSFileManager defaultManager] fileExistsAtPath:localArtworkUrl];
-                    if (fileExists) {
-                        image = [UIImage imageNamed:localArtworkUrl];
-                    }
+        
+        __weak typeof(self) weakSelf = self;
+        if ([artworkUrl hasPrefix:@"http://"] || [artworkUrl hasPrefix:@"https://"]) {
+            [[SSImageManager sharedManager] downloadImageWithUrl:artworkUrl
+                                                      completion:^(UIImage * _Nullable image, NSError * _Nullable error) {
+                if (!weakSelf) {
+                    return;
                 }
-            }
-
-            // Check if image was available otherwise don't do anything
-            if (image == nil) {
-                return;
-            }
-
-            // check whether image is loaded
-            CGImageRef cgref = [image CGImage];
-            CIImage *cim = [image CIImage];
-
-            if (cim != nil || cgref != NULL) {
-
-                dispatch_async(dispatch_get_main_queue(), ^{
-
-                    // Check if URL wasn't changed in the meantime
-                    if ([artworkUrl isEqual:self.artworkUrl]) {
-                        MPNowPlayingInfoCenter *center = [MPNowPlayingInfoCenter defaultCenter];
-                        MPMediaItemArtwork *artwork = [[MPMediaItemArtwork alloc] initWithImage: image];
-                        NSMutableDictionary *mediaDict = (center.nowPlayingInfo != nil) ? [[NSMutableDictionary alloc] initWithDictionary: center.nowPlayingInfo] : [NSMutableDictionary dictionary];
-                        [mediaDict setValue:artwork forKey:MPMediaItemPropertyArtwork];
-                        center.nowPlayingInfo = mediaDict;
-                    }
+                dispatch_main_async_safe(^{
+                  if (!weakSelf) {
+                      return;
+                  }
+                  if (image) {
+                      [weakSelf updateNowPlayingCenterWithImage:image];
+                  }
                 });
+            }];
+        } else {
+            NSString *localArtworkUrl = [artworkUrl stringByReplacingOccurrencesOfString:@"file://" withString:@""];
+            BOOL fileExists = [[NSFileManager defaultManager] fileExistsAtPath:localArtworkUrl];
+            if (fileExists) {
+                UIImage *image = [UIImage imageNamed:localArtworkUrl];
+                [self updateNowPlayingCenterWithImage:image];
             }
-        });
+        }
     }
+}
+
+- (void)updateNowPlayingCenterWithImage:(UIImage *)image {
+    MPNowPlayingInfoCenter *center = [MPNowPlayingInfoCenter defaultCenter];
+    NSMutableDictionary *mediaDict = (center.nowPlayingInfo != nil) ? [[NSMutableDictionary alloc] initWithDictionary: center.nowPlayingInfo] : [NSMutableDictionary dictionary];
+    MPMediaItemArtwork *artwork = [[MPMediaItemArtwork alloc] initWithImage: image];
+    [mediaDict setValue:artwork forKey:MPMediaItemPropertyArtwork];
+    center.nowPlayingInfo = mediaDict;
 }
 
 - (void)audioHardwareRouteChanged:(NSNotification *)notification {
