@@ -118,7 +118,6 @@ public class MusicControlNotification {
         if (MusicControlModule.INSTANCE == null ||
             MusicControlModule.INSTANCE.getRealArtWork() == null ||
             MusicControlModule.INSTANCE.getRealArtWork().isRecycled()) {
-            MusicControlModule.INSTANCE.setRealArtWork(null);
             return null;
         }
 
