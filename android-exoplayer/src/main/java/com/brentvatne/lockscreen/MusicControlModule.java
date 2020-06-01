@@ -394,7 +394,7 @@ public class MusicControlModule extends ReactContextBaseJavaModule implements Co
         pb.setActions(controls);
 
         isPlaying = pbState == PlaybackStateCompat.STATE_PLAYING || pbState == PlaybackStateCompat.STATE_BUFFERING;
-        if (session.isActive() && (realArtWork != null && !realArtWork.isRecycled())) {
+        if (session.isActive() && realArtWork != null && !realArtWork.isRecycled()) {
             notification.show(nb, isPlaying);
         }
 
@@ -521,6 +521,10 @@ public class MusicControlModule extends ReactContextBaseJavaModule implements Co
 
     public Bitmap getRealArtWork() {
         return realArtWork;
+    }
+
+    public void setRealArtWork(Bitmap realArtWork) {
+        this.realArtWork = realArtWork;
     }
 
     private void dump() {
