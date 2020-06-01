@@ -609,60 +609,7 @@ static int const RCTVideoUnset = -1;
     
     if ([keyPath isEqualToString:statusKeyPath]) {
       // Handle player item status change.
-      if (_playerItem.status == AVPlayerItemStatusReadyToPlay) {
-        float duration = CMTimeGetSeconds(_playerItem.asset.duration);
-        
-        if (isnan(duration)) {
-          duration = 0.0;
-        }
-        
-        NSObject *width = @"undefined";
-        NSObject *height = @"undefined";
-        NSString *orientation = @"undefined";
-        
-        if ([_playerItem.asset tracksWithMediaType:AVMediaTypeVideo].count > 0) {
-          AVAssetTrack *videoTrack = [[_playerItem.asset tracksWithMediaType:AVMediaTypeVideo] objectAtIndex:0];
-          width = [NSNumber numberWithFloat:videoTrack.naturalSize.width];
-          height = [NSNumber numberWithFloat:videoTrack.naturalSize.height];
-          CGAffineTransform preferredTransform = [videoTrack preferredTransform];
-          
-          if ((videoTrack.naturalSize.width == preferredTransform.tx
-               && videoTrack.naturalSize.height == preferredTransform.ty)
-              || (preferredTransform.tx == 0 && preferredTransform.ty == 0))
-          {
-            orientation = @"landscape";
-          } else {
-            orientation = @"portrait";
-          }
-        }
-        
-        if (self.onVideoLoad && _videoLoadStarted) {
-          self.onVideoLoad(@{@"duration": [NSNumber numberWithFloat:duration],
-                             @"currentTime": [NSNumber numberWithFloat:CMTimeGetSeconds(_playerItem.currentTime)],
-                             @"canPlayReverse": [NSNumber numberWithBool:_playerItem.canPlayReverse],
-                             @"canPlayFastForward": [NSNumber numberWithBool:_playerItem.canPlayFastForward],
-                             @"canPlaySlowForward": [NSNumber numberWithBool:_playerItem.canPlaySlowForward],
-                             @"canPlaySlowReverse": [NSNumber numberWithBool:_playerItem.canPlaySlowReverse],
-                             @"canStepBackward": [NSNumber numberWithBool:_playerItem.canStepBackward],
-                             @"canStepForward": [NSNumber numberWithBool:_playerItem.canStepForward],
-                             @"naturalSize": @{
-                                 @"width": width,
-                                 @"height": height,
-                                 @"orientation": orientation
-                                 },
-                             @"audioTracks": [self getAudioTrackInfo],
-                             @"textTracks": [self getTextTrackInfo],
-                             @"target": self.reactTag});
-        }
-        _videoLoadStarted = NO;
-        
-        [self attachListeners];
-        [self applyModifiers];
-      } else if (_playerItem.status == AVPlayerItemStatusFailed && self.onVideoError) {
-        self.onVideoError(@{@"error": @{@"code": [NSNumber numberWithInteger: _playerItem.error.code],
-                                        @"domain": _playerItem.error.domain},
-                            @"target": self.reactTag});
-      }
+      [self handleStatusChanged];
     } else if ([keyPath isEqualToString:playbackBufferEmptyKeyPath]) {
       _playerBufferEmpty = YES;
       self.onVideoBuffer(@{@"isBuffering": @(YES), @"target": self.reactTag});
@@ -722,10 +669,72 @@ static int const RCTVideoUnset = -1;
         }
         _playerBufferEmpty = NO;
         self.onVideoBuffer(@{@"isBuffering": @(NO), @"target": self.reactTag});
+    } else if ([keyPath isEqualToString:statusKeyPath]) {
+        [self handleStatusChanged];
     } else {
         [super observeValueForKeyPath:keyPath ofObject:object change:change context:context];
     }
   }
+}
+
+- (void)handleStatusChanged {
+    if (!_playerItem) {
+        return;
+    }
+    if (_playerItem.status == AVPlayerItemStatusReadyToPlay) {
+      float duration = CMTimeGetSeconds(_playerItem.asset.duration);
+      
+      if (isnan(duration)) {
+        duration = 0.0;
+      }
+      
+      NSObject *width = @"undefined";
+      NSObject *height = @"undefined";
+      NSString *orientation = @"undefined";
+      
+      if ([_playerItem.asset tracksWithMediaType:AVMediaTypeVideo].count > 0) {
+        AVAssetTrack *videoTrack = [[_playerItem.asset tracksWithMediaType:AVMediaTypeVideo] objectAtIndex:0];
+        width = [NSNumber numberWithFloat:videoTrack.naturalSize.width];
+        height = [NSNumber numberWithFloat:videoTrack.naturalSize.height];
+        CGAffineTransform preferredTransform = [videoTrack preferredTransform];
+        
+        if ((videoTrack.naturalSize.width == preferredTransform.tx
+             && videoTrack.naturalSize.height == preferredTransform.ty)
+            || (preferredTransform.tx == 0 && preferredTransform.ty == 0))
+        {
+          orientation = @"landscape";
+        } else {
+          orientation = @"portrait";
+        }
+      }
+      
+      if (self.onVideoLoad && _videoLoadStarted) {
+        self.onVideoLoad(@{@"duration": [NSNumber numberWithFloat:duration],
+                           @"currentTime": [NSNumber numberWithFloat:CMTimeGetSeconds(_playerItem.currentTime)],
+                           @"canPlayReverse": [NSNumber numberWithBool:_playerItem.canPlayReverse],
+                           @"canPlayFastForward": [NSNumber numberWithBool:_playerItem.canPlayFastForward],
+                           @"canPlaySlowForward": [NSNumber numberWithBool:_playerItem.canPlaySlowForward],
+                           @"canPlaySlowReverse": [NSNumber numberWithBool:_playerItem.canPlaySlowReverse],
+                           @"canStepBackward": [NSNumber numberWithBool:_playerItem.canStepBackward],
+                           @"canStepForward": [NSNumber numberWithBool:_playerItem.canStepForward],
+                           @"naturalSize": @{
+                               @"width": width,
+                               @"height": height,
+                               @"orientation": orientation
+                               },
+                           @"audioTracks": [self getAudioTrackInfo],
+                           @"textTracks": [self getTextTrackInfo],
+                           @"target": self.reactTag});
+      }
+      _videoLoadStarted = NO;
+      
+      [self attachListeners];
+      [self applyModifiers];
+    } else if (_playerItem.status == AVPlayerItemStatusFailed && self.onVideoError) {
+      self.onVideoError(@{@"error": @{@"code": [NSNumber numberWithInteger: _playerItem.error.code],
+                                      @"domain": _playerItem.error.domain},
+                          @"target": self.reactTag});
+    }
 }
 
 - (void)attachListeners
@@ -837,7 +846,7 @@ static int const RCTVideoUnset = -1;
   } else if (_pipController && !_pictureInPicture && [_pipController isPictureInPictureActive]) {
     dispatch_async(dispatch_get_main_queue(), ^{
       [_pipController stopPictureInPicture];
-	});
+    });
   }
   #endif
 }
