@@ -523,10 +523,6 @@ public class MusicControlModule extends ReactContextBaseJavaModule implements Co
         return realArtWork;
     }
 
-    public void setRealArtWork(Bitmap realArtWork) {
-        this.realArtWork = realArtWork;
-    }
-
     private void dump() {
         Log.i(TAG, ">DUMP START<");
         if (session != null) Log.d(TAG, "session = " + session);
