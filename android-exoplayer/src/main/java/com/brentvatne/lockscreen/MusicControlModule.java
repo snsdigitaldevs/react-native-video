@@ -136,10 +136,10 @@ public class MusicControlModule extends ReactContextBaseJavaModule implements Co
                     || hasControl(PlaybackStateCompat.ACTION_PLAY_PAUSE)) {
                 controlCount += 1;
             }
-            if(hasControl(PlaybackStateCompat.ACTION_SKIP_TO_NEXT)) {
+            if(hasControl(PlaybackStateCompat.ACTION_FAST_FORWARD)) {
                 controlCount += 1;
             }
-            if(hasControl(PlaybackStateCompat.ACTION_SKIP_TO_PREVIOUS)) {
+            if(hasControl(PlaybackStateCompat.ACTION_REWIND)) {
                 controlCount += 1;
             }
             int[] actions = new int[controlCount];
