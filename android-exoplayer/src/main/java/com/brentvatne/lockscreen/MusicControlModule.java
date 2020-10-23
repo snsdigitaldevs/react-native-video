@@ -129,7 +129,7 @@ public class MusicControlModule extends ReactContextBaseJavaModule implements Co
         if (!(Build.MANUFACTURER.toLowerCase(Locale.getDefault()).contains("huawei")
                 && Build.VERSION.SDK_INT < Build.VERSION_CODES.M)) {
             MediaStyle style = new MediaStyle();
-            style.setMediaSession(session.getSessionToken());
+//            style.setMediaSession(session.getSessionToken());
             int controlCount = 0;
             if(hasControl(PlaybackStateCompat.ACTION_PLAY)
                     || hasControl(PlaybackStateCompat.ACTION_PAUSE)
