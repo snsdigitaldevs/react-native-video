@@ -116,7 +116,7 @@ public class MusicControlListener extends MediaSessionCompat.Callback {
 
     @Override
     public void onSeekTo(long pos) {
-        sendEvent(context, "seek", pos / 1000D);
+        sendEvent(context, "seek", pos / 100D);
     }
 
     @Override
