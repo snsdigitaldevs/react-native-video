@@ -18,7 +18,6 @@ import android.os.Build;
 import androidx.annotation.RequiresApi;
 
 import android.support.v4.media.MediaMetadataCompat;
-import android.support.v4.media.RatingCompat;
 import android.support.v4.media.session.MediaSessionCompat;
 import android.support.v4.media.session.PlaybackStateCompat;
 
@@ -70,7 +69,6 @@ public class MusicControlModule extends ReactContextBaseJavaModule implements Co
     private boolean remoteVolume = false;
     private boolean isPlaying = false;
     private long controls = 0;
-    protected int ratingType = RatingCompat.RATING_PERCENTAGE;
     private Bitmap realArtWork = null;
 
     public NotificationClose notificationClose = NotificationClose.PAUSED;
@@ -96,13 +94,6 @@ public class MusicControlModule extends ReactContextBaseJavaModule implements Co
         map.put("STATE_PLAYING", PlaybackStateCompat.STATE_PLAYING);
         map.put("STATE_PAUSED", PlaybackStateCompat.STATE_PAUSED);
         map.put("STATE_BUFFERING", PlaybackStateCompat.STATE_BUFFERING);
-
-        map.put("RATING_HEART", RatingCompat.RATING_HEART);
-        map.put("RATING_THUMBS_UP_DOWN", RatingCompat.RATING_THUMB_UP_DOWN);
-        map.put("RATING_3_STARS", RatingCompat.RATING_3_STARS);
-        map.put("RATING_4_STARS", RatingCompat.RATING_4_STARS);
-        map.put("RATING_5_STARS", RatingCompat.RATING_5_STARS);
-        map.put("RATING_PERCENTAGE", RatingCompat.RATING_PERCENTAGE);
         return map;
     }
 
@@ -281,20 +272,6 @@ public class MusicControlModule extends ReactContextBaseJavaModule implements Co
         if(removeFade) {
             nb.setStyle(new MediaStyle());
         }
-        RatingCompat rating;
-        if (metadata.hasKey("rating")) {
-            if (ratingType == RatingCompat.RATING_PERCENTAGE) {
-                rating = RatingCompat.newPercentageRating((float) metadata.getDouble("rating"));
-            } else if (ratingType == RatingCompat.RATING_HEART) {
-                rating = RatingCompat.newHeartRating(metadata.getBoolean("rating"));
-            } else if (ratingType == RatingCompat.RATING_THUMB_UP_DOWN) {
-                rating = RatingCompat.newThumbRating(metadata.getBoolean("rating"));
-            } else {
-                rating = RatingCompat.newStarRating(ratingType, (float) metadata.getDouble("rating"));
-            }
-        } else {
-            rating = RatingCompat.newUnratedRating(ratingType);
-        }
 
         md.putText(MediaMetadataCompat.METADATA_KEY_TITLE, title);
         md.putText(MediaMetadataCompat.METADATA_KEY_ARTIST, artist);
@@ -303,9 +280,6 @@ public class MusicControlModule extends ReactContextBaseJavaModule implements Co
         md.putText(MediaMetadataCompat.METADATA_KEY_DISPLAY_DESCRIPTION, description);
         md.putText(MediaMetadataCompat.METADATA_KEY_DATE, date);
         md.putLong(MediaMetadataCompat.METADATA_KEY_DURATION, duration);
-        if (android.os.Build.VERSION.SDK_INT > 19) {
-            md.putRating(MediaMetadataCompat.METADATA_KEY_RATING, rating);
-        }
 
         nb.setContentTitle(title);
         nb.setContentText(artist);
@@ -379,7 +353,6 @@ public class MusicControlModule extends ReactContextBaseJavaModule implements Co
         int pbState = info.hasKey("state") ? info.getInt("state") : state.getState();
         int maxVol = info.hasKey("maxVolume") ? info.getInt("maxVolume") : volume.getMaxVolume();
         int vol = info.hasKey("volume") ? info.getInt("volume") : volume.getCurrentVolume();
-        ratingType = info.hasKey("rating") ? info.getInt("rating") : ratingType;
 
         if (info.hasKey("elapsedTime")) {
             elapsedTime = (long) (info.getDouble("elapsedTime") * 1000);
@@ -471,9 +444,6 @@ public class MusicControlModule extends ReactContextBaseJavaModule implements Co
                 break;
             case "seek":
                 controlValue = PlaybackStateCompat.ACTION_SEEK_TO;
-                break;
-            case "setRating":
-                controlValue = PlaybackStateCompat.ACTION_SET_RATING;
                 break;
             case "volume":
                 volume = volume.create(enable, null, null);

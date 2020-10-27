@@ -29,7 +29,6 @@
 #define MEDIA_STATE_STOPPED @"STATE_STOPPED"
 #define MEDIA_STATE_ERROR @"STATE_ERROR"
 #define MEDIA_STATE_BUFFERING @"STATE_BUFFERING"
-#define MEDIA_STATE_RATING_PERCENTAGE @"STATE_RATING_PERCENTAGE"
 #define MEDIA_SPEED @"speed"
 #define MEDIA_STATE @"state"
 #define MEDIA_DICT @{@"album": MPMediaItemPropertyAlbumTitle, \
@@ -63,7 +62,6 @@ RCT_EXPORT_MODULE()
         @"STATE_STOPPED" : MEDIA_STATE_STOPPED,
         @"STATE_ERROR" :MEDIA_STATE_ERROR,
         @"STATE_BUFFERING":MEDIA_STATE_BUFFERING,
-        @"STATE_RATING_PERCENTAGE":MEDIA_STATE_RATING_PERCENTAGE,
     };
 }
 
@@ -154,12 +152,6 @@ RCT_EXPORT_METHOD(enableControl:(NSString *) controlName enabled:(BOOL) enabled 
 
     } else if ([controlName isEqual: @"togglePlayPause"]) {
         [self toggleHandler:remoteCenter.togglePlayPauseCommand withSelector:@selector(onTogglePlayPause:) enabled:enabled];
-    } else if ([controlName isEqual: @"enableLanguageOption"]) {
-        [self toggleHandler:remoteCenter.enableLanguageOptionCommand withSelector:@selector(onEnableLanguageOption:) enabled:enabled];
-
-    } else if ([controlName isEqual: @"disableLanguageOption"]) {
-        [self toggleHandler:remoteCenter.disableLanguageOptionCommand withSelector:@selector(onDisableLanguageOption:) enabled:enabled];
-
     } else if ([controlName isEqual: @"nextTrack"]) {
         [self toggleHandler:remoteCenter.nextTrackCommand withSelector:@selector(onNextTrack:) enabled:enabled];
 
@@ -298,8 +290,6 @@ RCT_EXPORT_METHOD(observeHeadsetPlayPause:(BOOL) observe) {
     [self toggleHandler:remoteCenter.changePlaybackPositionCommand withSelector:@selector(onChangePlaybackPosition:) enabled:false];
     [self toggleHandler:remoteCenter.stopCommand withSelector:@selector(onStop:) enabled:false];
     [self toggleHandler:remoteCenter.togglePlayPauseCommand withSelector:@selector(onTogglePlayPause:) enabled:false];
-    [self toggleHandler:remoteCenter.enableLanguageOptionCommand withSelector:@selector(onEnableLanguageOption:) enabled:false];
-    [self toggleHandler:remoteCenter.disableLanguageOptionCommand withSelector:@selector(onDisableLanguageOption:) enabled:false];
     [self toggleHandler:remoteCenter.nextTrackCommand withSelector:@selector(onNextTrack:) enabled:false];
     [self toggleHandler:remoteCenter.previousTrackCommand withSelector:@selector(onPreviousTrack:) enabled:false];
     [self toggleHandler:remoteCenter.seekForwardCommand withSelector:@selector(onSeekForward:) enabled:false];
@@ -326,14 +316,6 @@ RCT_EXPORT_METHOD(observeHeadsetPlayPause:(BOOL) observe) {
 }
 - (MPRemoteCommandHandlerStatus)onTogglePlayPause:(MPRemoteCommandEvent*)event {
     [self sendEvent:@"togglePlayPause"];
-    return MPRemoteCommandHandlerStatusSuccess;
-}
-- (MPRemoteCommandHandlerStatus)onEnableLanguageOption:(MPRemoteCommandEvent*)event {
-    [self sendEvent:@"enableLanguageOption"];
-    return MPRemoteCommandHandlerStatusSuccess;
-}
-- (MPRemoteCommandHandlerStatus)onDisableLanguageOption:(MPRemoteCommandEvent*)event {
-    [self sendEvent:@"disableLanguageOption"];
     return MPRemoteCommandHandlerStatusSuccess;
 }
 - (MPRemoteCommandHandlerStatus)onNextTrack:(MPRemoteCommandEvent*)event {

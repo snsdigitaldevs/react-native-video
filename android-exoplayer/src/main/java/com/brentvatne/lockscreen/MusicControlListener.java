@@ -3,7 +3,6 @@ package com.brentvatne.lockscreen;
 import android.content.Intent;
 import android.os.Build;
 import android.os.Bundle;
-import android.support.v4.media.RatingCompat;
 
 import androidx.core.content.ContextCompat;
 import androidx.media.VolumeProviderCompat;
@@ -129,22 +128,6 @@ public class MusicControlListener extends MediaSessionCompat.Callback {
     public void onRewind() {
         Log.d(TAG, "skipBackward Event");
         sendEvent(context, "skipBackward", null);
-    }
-
-    @Override
-    public void onSetRating(RatingCompat rating) {
-        if (MusicControlModule.INSTANCE == null) return;
-        int type = MusicControlModule.INSTANCE.ratingType;
-
-        if (type == RatingCompat.RATING_PERCENTAGE) {
-            sendEvent(context, "setRating", rating.getPercentRating());
-        } else if (type == RatingCompat.RATING_HEART) {
-            sendEvent(context, "setRating", rating.hasHeart());
-        } else if (type == RatingCompat.RATING_THUMB_UP_DOWN) {
-            sendEvent(context, "setRating", rating.isThumbUp());
-        } else {
-            sendEvent(context, "setRating", rating.getStarRating());
-        }
     }
 
     public static class VolumeListener extends VolumeProviderCompat {
