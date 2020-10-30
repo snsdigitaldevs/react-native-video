@@ -173,8 +173,6 @@ public class MusicControlModule extends ReactContextBaseJavaModule implements Co
         nb = new NotificationCompat.Builder(context, CHANNEL_ID);
         nb.setVisibility(NotificationCompat.VISIBILITY_PUBLIC);
 
-        updateNotificationMediaStyle();
-
         state = pb.build();
 
         notification = new MusicControlNotification(this, context);
@@ -374,11 +372,11 @@ public class MusicControlModule extends ReactContextBaseJavaModule implements Co
         state = pb.build();
         session.setPlaybackState(state);
 
-        updateNotificationMediaStyle();
-
         if(session.isActive()) {
             notification.show(nb, isPlaying);
         }
+
+        updateNotificationMediaStyle();
 
         if (remoteVolume) {
             session.setPlaybackToRemote(volume.create(null, maxVol, vol));

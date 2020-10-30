@@ -88,8 +88,8 @@ public class MusicControlNotification {
         builder.mActions.clear();
         if (previous != null) builder.addAction(previous);
         if (skipBackward != null) builder.addAction(skipBackward);
-        if (play != null && !isPlaying) builder.addAction(play);
-        if (pause != null && isPlaying) builder.addAction(pause);
+        if (play != null) builder.addAction(play);
+        if (pause != null) builder.addAction(pause);
         if (stop != null) builder.addAction(stop);
         if (next != null) builder.addAction(next);
         if (skipForward != null) builder.addAction(skipForward);
