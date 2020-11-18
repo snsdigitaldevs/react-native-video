@@ -298,15 +298,19 @@ public class MusicControlModule extends ReactContextBaseJavaModule implements Co
                     Log.d(TAG, "onNewResultImpl load bitmap complete");
                     bitmapRef = bitmapReference.clone();
                     Bitmap bitmap;
-                    if (bitmapRef != null) {
-                        bitmap = bitmapRef.get();
-                        if (bitmap == null || bitmap.isRecycled()) {
+                    try {
+                        if (bitmapRef != null) {
+                            bitmap = bitmapRef.get();
+                            if (bitmap == null || bitmap.isRecycled()) {
+                                bitmap = BitmapFactory.decodeResource(context.getResources(), R.drawable.pimsleuricon11);
+                            }
+                        } else {
                             bitmap = BitmapFactory.decodeResource(context.getResources(), R.drawable.pimsleuricon11);
                         }
-                    } else {
-                        bitmap = BitmapFactory.decodeResource(context.getResources(), R.drawable.pimsleuricon11);
+                        setupBitmap(bitmap);
+                    } finally {
+                        CloseableReference.closeSafely(bitmapReference);
                     }
-                    setupBitmap(bitmap);
                 }
 
                 @Override
