@@ -115,9 +115,7 @@ public class MusicControlNotification {
         Intent remove = new Intent(REMOVE_NOTIFICATION);
         remove.putExtra(PACKAGE_NAME, context.getApplicationInfo().packageName);
         builder.setDeleteIntent(PendingIntent.getBroadcast(context, 0, remove, PendingIntent.FLAG_UPDATE_CURRENT));
-        if (MusicControlModule.INSTANCE != null
-                && MusicControlModule.INSTANCE.getRealArtWork() != null
-                && MusicControlModule.INSTANCE.getRealArtWork().isRecycled()) {
+        if (MusicControlModule.INSTANCE == null) {
             return null;
         }
 

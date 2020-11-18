@@ -1,6 +1,5 @@
 package com.brentvatne.lockscreen;
 
-import android.app.Notification;
 import android.app.NotificationManager;
 import android.app.NotificationChannel;
 import android.content.ComponentCallbacks2;
@@ -31,7 +30,7 @@ import com.facebook.common.executors.UiThreadImmediateExecutorService;
 import com.facebook.common.references.CloseableReference;
 import com.facebook.datasource.DataSource;
 import com.facebook.drawee.backends.pipeline.Fresco;
-import com.facebook.imagepipeline.datasource.BaseBitmapDataSubscriber;
+import com.facebook.imagepipeline.datasource.BaseBitmapReferenceDataSubscriber;
 import com.facebook.imagepipeline.image.CloseableImage;
 import com.facebook.imagepipeline.request.ImageRequest;
 import com.facebook.react.bridge.ReactApplicationContext;
@@ -69,7 +68,7 @@ public class MusicControlModule extends ReactContextBaseJavaModule implements Co
     private boolean remoteVolume = false;
     private boolean isPlaying = false;
     private long controls = 0;
-    private Bitmap realArtWork = null;
+    private CloseableReference<Bitmap> bitmapRef = null;
 
     public NotificationClose notificationClose = NotificationClose.PAUSED;
 
@@ -236,8 +235,10 @@ public class MusicControlModule extends ReactContextBaseJavaModule implements Co
         md = null;
         pb = null;
         nb = null;
-        realArtWork = null;
-
+        if (bitmapRef != null) {
+            CloseableReference.closeSafely(bitmapRef);
+            bitmapRef = null;
+        }
         init = false;
     }
 
@@ -291,47 +292,48 @@ public class MusicControlModule extends ReactContextBaseJavaModule implements Co
 
             ImageRequest imageRequest = ImageRequest.fromUri(artworkUrl);
             DataSource<CloseableReference<CloseableImage>> dataSource = Fresco.getImagePipeline().fetchDecodedImage(imageRequest, null);
-            dataSource.subscribe(new BaseBitmapDataSubscriber() {
+            dataSource.subscribe(new BaseBitmapReferenceDataSubscriber() {
                 @Override
-                protected void onNewResultImpl(@Nullable Bitmap bitmap) {
-                    realArtWork = bitmap;
-                    Log.d(TAG, "onNewResultImpl bitmap=" + bitmap);
-                    if (md != null) {
-                        md.putBitmap(MediaMetadataCompat.METADATA_KEY_ART, realArtWork);
-                        // session.setMetadata(md.build());
+                protected void onNewResultImpl(@Nullable CloseableReference<Bitmap> bitmapReference) {
+                    Log.d(TAG, "onNewResultImpl load bitmap complete");
+                    bitmapRef = bitmapReference.clone();
+                    Bitmap bitmap;
+                    if (bitmapRef != null) {
+                        bitmap = bitmapRef.get();
+                        if (bitmap == null || bitmap.isRecycled()) {
+                            bitmap = BitmapFactory.decodeResource(context.getResources(), R.drawable.pimsleuricon11);
+                        }
+                    } else {
+                        bitmap = BitmapFactory.decodeResource(context.getResources(), R.drawable.pimsleuricon11);
                     }
-                    if (nb != null && notification != null) {
-                        nb.setLargeIcon(realArtWork);
-                        notification.show(nb, isPlaying);
-                    }
+                    setupBitmap(bitmap);
                 }
 
                 @Override
                 protected void onFailureImpl(DataSource<CloseableReference<CloseableImage>> dataSource) {
-                    Log.d(TAG, "load failed to set color..");
-                    realArtWork = BitmapFactory.decodeResource(context.getResources(), R.drawable.pimsleuricon11);
-                    if (md != null) {
-                        md.putBitmap(MediaMetadataCompat.METADATA_KEY_ART, realArtWork);
-                    }
-                    if (nb != null) {
-                        nb.setLargeIcon(realArtWork);
-                    }
+                    Log.d(TAG, "onFailureImpl load bitmap failed");
+                    Bitmap bitmap = BitmapFactory.decodeResource(context.getResources(), R.drawable.pimsleuricon11);
+                    setupBitmap(bitmap);
                 }
             }, UiThreadImmediateExecutorService.getInstance());
         } else if ((metadata.hasKey("artwork") && ReadableType.Map == metadata.getType("artwork"))) {
-            realArtWork = BitmapFactory.decodeResource(context.getResources(), R.drawable.pimsleuricon11);
-            if (md != null) {
-                md.putBitmap(MediaMetadataCompat.METADATA_KEY_ART, realArtWork);
-            }
-            if (nb != null && notification != null) {
-                nb.setLargeIcon(realArtWork);
-                notification.show(nb, isPlaying);
-            }
+            Bitmap bitmap = BitmapFactory.decodeResource(context.getResources(), R.drawable.pimsleuricon11);
+            setupBitmap(bitmap);
         }
 
         //session.setMetadata(md.build());
         session.setActive(true);
         notification.show(nb, isPlaying);
+    }
+
+    private void setupBitmap(Bitmap bitmap) {
+        if (md != null) {
+            md.putBitmap(MediaMetadataCompat.METADATA_KEY_ART, bitmap);
+        }
+        if (nb != null && notification != null) {
+            nb.setLargeIcon(bitmap);
+            notification.show(nb, isPlaying);
+        }
     }
 
     @ReactMethod
@@ -365,7 +367,7 @@ public class MusicControlModule extends ReactContextBaseJavaModule implements Co
         pb.setActions(controls);
 
         isPlaying = pbState == PlaybackStateCompat.STATE_PLAYING || pbState == PlaybackStateCompat.STATE_BUFFERING;
-        if (session.isActive() && realArtWork != null && !realArtWork.isRecycled()) {
+        if (session.isActive() && bitmapRef != null) {
             notification.show(nb, isPlaying);
         }
 
@@ -485,10 +487,6 @@ public class MusicControlModule extends ReactContextBaseJavaModule implements Co
 
         state = pb.build();
         session.setPlaybackState(state);
-    }
-
-    public Bitmap getRealArtWork() {
-        return realArtWork;
     }
 
     private void dump() {
