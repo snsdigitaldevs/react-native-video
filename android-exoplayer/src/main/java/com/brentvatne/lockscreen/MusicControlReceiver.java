@@ -28,17 +28,21 @@ public class MusicControlReceiver extends BroadcastReceiver {
 
     @Override
     public void onReceive(Context context, Intent intent) {
-        if (module.session == null || module.notification == null) return;
+        if (module.session == null || module.notification == null) {
+            return;
+        };
         String action = intent.getAction();
 
         if (MusicControlNotification.REMOVE_NOTIFICATION.equals(action)) {
 
             if (!checkApp(intent)) return;
-
-            // Removes the notification and deactivates the media session
-            module.notification.hide();
-            module.session.setActive(false);
-
+            try {
+                // Removes the notification and deactivates the media session
+                module.notification.hide();
+                module.session.setActive(false);
+            } catch (NullPointerException e) {
+                e.printStackTrace();
+            }
             // Notify react native
             WritableMap data = Arguments.createMap();
             data.putString("name", "closeNotification");
