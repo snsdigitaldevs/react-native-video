@@ -265,7 +265,6 @@ public class MusicControlModule extends ReactContextBaseJavaModule implements Co
         String date = metadata.hasKey("date") ? metadata.getString("date") : null;
         long duration = metadata.hasKey("duration") ? (long) (metadata.getDouble("duration") * 1000) : 0;
         int notificationColor = metadata.hasKey("color") ? metadata.getInt("color") : NotificationCompat.COLOR_DEFAULT;
-        String notificationIcon = metadata.hasKey("notificationIcon") ? metadata.getString("notificationIcon") : null;
 
         // If a color is supplied, we need to clear the MediaStyle set during init().
         // Otherwise, the color will not be used for the notification's background.
@@ -286,8 +285,6 @@ public class MusicControlModule extends ReactContextBaseJavaModule implements Co
         nb.setContentText(artist);
         nb.setContentInfo(album);
         nb.setColor(notificationColor);
-
-        notification.setCustomNotificationIcon(notificationIcon);
 
         if ((metadata.hasKey("artwork") && ReadableType.String == metadata.getType("artwork"))) {
             String artworkUrl = metadata.getString("artwork");
