@@ -26,6 +26,8 @@ import androidx.annotation.Nullable;
 
 final class AesDataSource extends BaseDataSource {
 
+    private static final int PER_CHUNK_SIZE = 1024;
+
     private final byte[] encryptionKey;
     private final byte[] encryptionIv;
 
@@ -64,6 +66,7 @@ final class AesDataSource extends BaseDataSource {
             transferInitializing(dataSpec);
             file = new RandomAccessFile(dataSpec.uri.getPath(), "r");
             file.seek(dataSpec.position);
+            prepareWithDataSpec(dataSpec);
             totalBytesRemaining = dataSpec.length == C.LENGTH_UNSET ? file.length() - dataSpec.position : dataSpec.length;
             if (totalBytesRemaining < 0) {
                 throw new EOFException();
@@ -76,6 +79,41 @@ final class AesDataSource extends BaseDataSource {
         opened = true;
         transferStarted(dataSpec);
         return totalBytesRemaining;
+    }
+
+    /**
+     * 为 dataSpec Seek 功能提前准备
+     *
+     * @param dataSpec
+     * @throws FileDataSourceException
+     */
+    private void prepareWithDataSpec(DataSpec dataSpec) throws FileDataSourceException {
+        if (file == null) return;
+        try {
+            if (dataSpec.position == 0) {
+                file.seek(0);
+                return;
+            }
+            final long needBackSize = dataSpec.position % PER_CHUNK_SIZE;
+            //只能seek到PER_CHUNK_SIZE整数倍
+            file.seek(dataSpec.position - needBackSize);
+            final long encryptDataLength = file.length() - dataSpec.position + needBackSize;
+            byte[] decryptBytes;
+            if (encryptDataLength > PER_CHUNK_SIZE) {
+                decryptBytes = new byte[PER_CHUNK_SIZE];
+                byte[] encryptBytes = new byte[PER_CHUNK_SIZE];
+                file.read(encryptBytes, 0, PER_CHUNK_SIZE);
+                cipher.update(encryptBytes, 0, encryptBytes.length, decryptBytes);
+            } else {
+                decryptBytes = new byte[(int) encryptDataLength];
+                byte[] encryptBytes = new byte[(int) encryptDataLength];
+                file.read(encryptBytes, 0, (int) encryptDataLength);
+                cipher.doFinal(encryptBytes, 0, encryptBytes.length, decryptBytes);
+            }
+            currentRemainingData = new ChunkDataKeeper(decryptBytes);
+        } catch (IOException | ShortBufferException | IllegalBlockSizeException | BadPaddingException e) {
+            throw new FileDataSourceException(e.getMessage(), e);
+        }
     }
 
     @Override
@@ -91,7 +129,7 @@ final class AesDataSource extends BaseDataSource {
                 internalByteTransferred(readLength);
                 return readLength;
             }
-            final int PER_CHUNK_SIZE = 1024;
+
             int bytesRead;
             try {
                 int readLengthInChunkSize = (readLength / PER_CHUNK_SIZE + 1) * PER_CHUNK_SIZE;
