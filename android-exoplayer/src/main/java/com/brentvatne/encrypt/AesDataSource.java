@@ -41,6 +41,11 @@ final class AesDataSource extends BaseDataSource {
     private ChunkDataKeeper currentRemainingData;
 
     public static class FileDataSourceException extends IOException {
+
+        public FileDataSourceException(String message) {
+            super(message);
+        }
+
         public FileDataSourceException(String message, Throwable cause) {
             super(message, cause);
         }
