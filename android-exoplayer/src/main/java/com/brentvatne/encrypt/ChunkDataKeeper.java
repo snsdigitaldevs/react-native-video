@@ -28,15 +28,15 @@ class ChunkDataKeeper {
         chunkRemaining = c.length;
     }
 
-    public void readData(byte[] target, int offset, int readLength) {
+    public void readData(byte[] target, int offset, int readLength) throws AesDataSource.FileDataSourceException {
         for (int i = 0; i < readLength; i++, chunkRemaining--) {
             final int targetIndex = offset + i;
             final int chunkDataIndex = chunkData.length - chunkRemaining;
             if (targetIndex >= target.length) {
-                throw new ArrayIndexOutOfBoundsException("length=" + target.length + "; index=" + targetIndex);
+                throw new AesDataSource.FileDataSourceException("length=" + target.length + "; index=" + targetIndex);
             }
             if (chunkDataIndex >= chunkData.length) {
-                throw new ArrayIndexOutOfBoundsException("length=" + chunkData.length + "; index=" + chunkDataIndex);
+                throw new AesDataSource.FileDataSourceException("length=" + chunkData.length + "; index=" + chunkDataIndex);
             }
             target[targetIndex] = chunkData[chunkDataIndex];
         }
