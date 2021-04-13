@@ -307,6 +307,8 @@ public class MusicControlModule extends ReactContextBaseJavaModule implements Co
                             bitmap = BitmapFactory.decodeResource(context.getResources(), R.drawable.pimsleuricon11);
                         }
                         setupBitmap(bitmap);
+                    } catch (Exception e) {
+                        e.printStackTrace();
                     } finally {
                         CloseableReference.closeSafely(bitmapReference);
                     }
