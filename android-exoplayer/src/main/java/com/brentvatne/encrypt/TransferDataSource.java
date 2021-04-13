@@ -146,16 +146,20 @@ class TransferDataSource implements DataSource {
                 }
             }
         } else if (SCHEME_ASSET.equals(scheme)) {
-            dataSource = getAssetDataSource();
+          dataSource = getAssetDataSource();
         } else if (SCHEME_CONTENT.equals(scheme)) {
-            dataSource = getContentDataSource();
+          dataSource = getContentDataSource();
         } else if (SCHEME_RTMP.equals(scheme)) {
-            dataSource = getRtmpDataSource();
+          dataSource = getRtmpDataSource();
+        } else if (DataSchemeDataSource.SCHEME_DATA.equals(scheme)) {
+          dataSource = getDataSchemeDataSource();
+        } else if (SCHEME_RAW.equals(scheme)) {
+          dataSource = getRawResourceDataSource();
         } else {
-            dataSource = baseDataSource;
+          dataSource = baseDataSource;
         }
-        // Open the source and return.
-        return dataSource.open(dataSpec);
+      // Open the source and return.
+      return dataSource.open(dataSpec);
     }
 
     @Override
