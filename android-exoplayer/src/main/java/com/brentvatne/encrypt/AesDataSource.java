@@ -2,18 +2,17 @@
 package com.brentvatne.encrypt;
 
 import android.net.Uri;
-
+import android.util.Log;
+import androidx.annotation.Nullable;
 import com.google.android.exoplayer2.C;
 import com.google.android.exoplayer2.upstream.BaseDataSource;
 import com.google.android.exoplayer2.upstream.DataSpec;
-
 import java.io.EOFException;
 import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.security.InvalidAlgorithmParameterException;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
-
 import javax.crypto.BadPaddingException;
 import javax.crypto.Cipher;
 import javax.crypto.IllegalBlockSizeException;
@@ -21,8 +20,6 @@ import javax.crypto.NoSuchPaddingException;
 import javax.crypto.ShortBufferException;
 import javax.crypto.spec.IvParameterSpec;
 import javax.crypto.spec.SecretKeySpec;
-
-import androidx.annotation.Nullable;
 
 final class AesDataSource extends BaseDataSource {
 
@@ -55,7 +52,9 @@ final class AesDataSource extends BaseDataSource {
         super(false);
         final byte[] key = EncryptInfo.getInstance().getKey();
         final byte[] iv = EncryptInfo.getInstance().getIv();
-        if (key == null || iv == null) throw new IOException("illegal aes args");
+        if (key == null || iv == null) {
+            throw new IOException("illegal aes args");
+        }
         this.encryptionKey = key;
         this.encryptionIv = iv;
     }
@@ -70,7 +69,6 @@ final class AesDataSource extends BaseDataSource {
             uri = dataSpec.uri;
             transferInitializing(dataSpec);
             file = new RandomAccessFile(dataSpec.uri.getPath(), "r");
-            file.seek(dataSpec.position);
             prepareWithDataSpec(dataSpec);
             totalBytesRemaining = dataSpec.length == C.LENGTH_UNSET ? file.length() - dataSpec.position : dataSpec.length;
             if (totalBytesRemaining < 0) {
@@ -93,16 +91,18 @@ final class AesDataSource extends BaseDataSource {
      * @throws FileDataSourceException
      */
     private void prepareWithDataSpec(DataSpec dataSpec) throws FileDataSourceException {
-        if (file == null) return;
+        if (file == null) {
+            return;
+        }
         try {
             if (dataSpec.position == 0) {
                 file.seek(0);
                 return;
             }
-            final long needBackSize = dataSpec.position % PER_CHUNK_SIZE;
+            int needBackSize = (int) (dataSpec.position % PER_CHUNK_SIZE);
             //只能seek到PER_CHUNK_SIZE整数倍
             file.seek(dataSpec.position - needBackSize);
-            final long encryptDataLength = file.length() - dataSpec.position + needBackSize;
+            long encryptDataLength = file.length() - dataSpec.position + needBackSize;
             byte[] decryptBytes;
             if (encryptDataLength > PER_CHUNK_SIZE) {
                 decryptBytes = new byte[PER_CHUNK_SIZE];
@@ -116,6 +116,7 @@ final class AesDataSource extends BaseDataSource {
                 cipher.doFinal(encryptBytes, 0, encryptBytes.length, decryptBytes);
             }
             currentRemainingData = new ChunkDataKeeper(decryptBytes);
+            currentRemainingData.throwAwayData(needBackSize);
         } catch (IOException | ShortBufferException | IllegalBlockSizeException | BadPaddingException e) {
             throw new FileDataSourceException(e.getMessage(), e);
         }
@@ -129,26 +130,24 @@ final class AesDataSource extends BaseDataSource {
             return C.RESULT_END_OF_INPUT;
         } else {
             //从已解密数据中获取
-            if (currentRemainingData != null && currentRemainingData.remainingCount() > readLength) {
+            if (currentRemainingData != null && currentRemainingData.remainingCount() >= readLength) {
                 currentRemainingData.readData(buffer, offset, readLength);
                 internalByteTransferred(readLength);
                 return readLength;
             }
 
-            int bytesRead;
+            int readFromFileLength;
+            int realReadFromDataKeeper;
             try {
                 int readLengthInChunkSize = (readLength / PER_CHUNK_SIZE + 1) * PER_CHUNK_SIZE;
                 //是否是最后的数据
                 boolean isLast = readLengthInChunkSize > totalBytesRemaining;
-                int tempByteSize = isLast ? (int) totalBytesRemaining : readLengthInChunkSize;
-                byte[] encryptBytes = new byte[tempByteSize];
-                byte[] decryptBytes = new byte[tempByteSize];
-                bytesRead = file.read(encryptBytes, 0, tempByteSize);
-                if (bytesRead < tempByteSize) {
-                    //处理实际读取比期望读取数据大的情况
-                    byte[] resizeBytes = new byte[bytesRead];
-                    System.arraycopy(encryptBytes, 0, resizeBytes, 0, bytesRead);
-                    encryptBytes = resizeBytes;
+                int wantByteLength = isLast ? (int) totalBytesRemaining : readLengthInChunkSize;
+                byte[] encryptBytes = new byte[wantByteLength];
+                byte[] decryptBytes = new byte[wantByteLength];
+                readFromFileLength = file.read(encryptBytes, 0, wantByteLength);
+                if (readFromFileLength < 0) {
+                    return C.RESULT_END_OF_INPUT;
                 }
                 if (isLast) {
                     cipher.doFinal(encryptBytes, 0, encryptBytes.length, decryptBytes);
@@ -161,12 +160,13 @@ final class AesDataSource extends BaseDataSource {
                 } else {
                     currentRemainingData.appendChunk(decryptBytes);
                 }
-                currentRemainingData.readData(buffer, offset, readLength);
+                realReadFromDataKeeper = Math.min(readLength, readFromFileLength);
+                currentRemainingData.readData(buffer, offset, realReadFromDataKeeper);
             } catch (IOException | ShortBufferException | IllegalBlockSizeException | BadPaddingException e) {
                 throw new FileDataSourceException(e.getMessage(), e);
             }
-            internalByteTransferred(readLength);
-            return readLength;
+            internalByteTransferred(realReadFromDataKeeper);
+            return realReadFromDataKeeper;
         }
     }
 

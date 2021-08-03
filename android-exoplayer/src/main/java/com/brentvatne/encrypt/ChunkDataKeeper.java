@@ -15,7 +15,9 @@ class ChunkDataKeeper {
     }
 
     public void appendChunk(byte[] data) {
-        if (data == null) return;
+        if (data == null) {
+            return;
+        }
         if (chunkData == null) {
             chunkData = new byte[0];
             chunkRemaining = 0;
@@ -40,6 +42,13 @@ class ChunkDataKeeper {
             }
             target[targetIndex] = chunkData[chunkDataIndex];
         }
+    }
+
+    public void throwAwayData(int length) throws AesDataSource.FileDataSourceException {
+        if (length > chunkRemaining) {
+            throw new AesDataSource.FileDataSourceException("throw away length = " + length + ", but remain length = " + chunkRemaining);
+        }
+        chunkRemaining -= length;
     }
 
     public int remainingCount() {
