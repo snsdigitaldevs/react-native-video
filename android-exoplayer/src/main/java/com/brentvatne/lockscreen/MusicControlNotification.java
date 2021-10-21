@@ -1,11 +1,11 @@
 package com.brentvatne.lockscreen;
 
+import android.annotation.SuppressLint;
 import android.app.Notification;
 import android.app.PendingIntent;
 import android.app.Service;
 import android.content.Intent;
 import android.content.res.Resources;
-import android.os.Build;
 import android.os.IBinder;
 
 import androidx.core.app.NotificationManagerCompat;
@@ -83,7 +83,11 @@ public class MusicControlNotification {
         }
     }
 
+    @SuppressLint("RestrictedApi")
     public synchronized Notification prepareNotification(NotificationCompat.Builder builder, boolean isPlaying) {
+        if (MusicControlModule.INSTANCE == null) {
+            return null;
+        }
         // Add the buttons
         builder.mActions.clear();
         if (previous != null) builder.addAction(previous);
@@ -115,9 +119,6 @@ public class MusicControlNotification {
         Intent remove = new Intent(REMOVE_NOTIFICATION);
         remove.putExtra(PACKAGE_NAME, context.getApplicationInfo().packageName);
         builder.setDeleteIntent(PendingIntent.getBroadcast(context, 0, remove, PendingIntent.FLAG_UPDATE_CURRENT));
-        if (MusicControlModule.INSTANCE == null) {
-            return null;
-        }
 
         return builder.build();
     }
@@ -132,13 +133,8 @@ public class MusicControlNotification {
 
     public void hide() {
         NotificationManagerCompat.from(context).cancel(NOTIFICATION_ID);
-
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) { //TODO up to O
-
-            Intent myIntent = new Intent(context, MusicControlNotification.NotificationService.class);
-            context.stopService(myIntent);
-
-        }
+        Intent myIntent = new Intent(context, MusicControlNotification.NotificationService.class);
+        context.stopService(myIntent);
     }
 
     private NotificationCompat.Action createAction(String iconName, String title, long mask, long action, NotificationCompat.Action oldAction) {
@@ -162,9 +158,6 @@ public class MusicControlNotification {
     }
 
     public static class NotificationService extends Service {
-        public static final String STOP_SERVICE="StopService";
-        private boolean isRunning;
-        private Notification notification;
 
         @Override
         public IBinder onBind(Intent intent) {
@@ -174,54 +167,35 @@ public class MusicControlNotification {
         @Override
         public void onCreate() {
             super.onCreate();
-
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O && MusicControlModule.INSTANCE != null &&
-                    MusicControlModule.INSTANCE.notification != null) { // TODO up to o
-                notification = MusicControlModule.INSTANCE.notification.prepareNotification(MusicControlModule.INSTANCE.nb, false);
-                if (notification != null) {
-                    startForeground(NOTIFICATION_ID, notification);
-                    isRunning = true;
-                }
-            } else {
-                //TODO
-            }
+            startForegroundService();
         }
 
         @Override
         public int onStartCommand(Intent intent, int flags, int startId) {
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                if (intent.getAction() != null && intent.getAction().equals(STOP_SERVICE) && notification != null && isRunning) {
-                    stopForeground(true);
-                    isRunning = false;
-                    stopSelf();
-                }
-            }
+            startForegroundService();
             return START_NOT_STICKY;
         }
 
         @Override
         public void onTaskRemoved(Intent rootIntent) {
-            // Destroy the notification and sessions when the task is removed (closed, killed, etc)
-            isRunning = false;
-            if (MusicControlModule.INSTANCE != null) {
-                MusicControlModule.INSTANCE.destroy();
-            }
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                stopForeground(true);
-            }
-            stopSelf(); // Stop the service as we won't need it anymore
+            super.onTaskRemoved(rootIntent);
+            // Stop the service when the task is removed (closed, killed, etc)
+            stopSelf();
         }
 
         @Override
         public void onDestroy() {
-            isRunning = false;
-            if (MusicControlModule.INSTANCE != null) {
-                MusicControlModule.INSTANCE.destroy();
+            super.onDestroy();
+            stopForeground(true);
+        }
+
+        private void startForegroundService() {
+            if (MusicControlModule.INSTANCE != null && MusicControlModule.INSTANCE.notification != null) {
+                Notification notification = MusicControlModule.INSTANCE.notification.prepareNotification(MusicControlModule.INSTANCE.nb, false);
+                if (notification != null) {
+                    startForeground(NOTIFICATION_ID, notification);
+                }
             }
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                stopForeground(true);
-            }
-            stopSelf();
         }
     }
 

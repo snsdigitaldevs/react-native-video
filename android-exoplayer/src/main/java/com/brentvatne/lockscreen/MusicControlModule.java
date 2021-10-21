@@ -78,6 +78,7 @@ public class MusicControlModule extends ReactContextBaseJavaModule implements Co
 
     public MusicControlModule(ReactApplicationContext context) {
         super(context);
+        this.context = context;
     }
 
     @Override
@@ -109,10 +110,7 @@ public class MusicControlModule extends ReactContextBaseJavaModule implements Co
         mNotificationManager.createNotificationChannel(mChannel);
     }
     private boolean hasControl(long control) {
-        if((controls & control) == control) {
-            return true;
-        }
-        return false;
+        return (controls & control) == control;
     }
 
     private void updateNotificationMediaStyle() {
@@ -143,12 +141,11 @@ public class MusicControlModule extends ReactContextBaseJavaModule implements Co
         }
     }
     private void init() {
-        if (init)
+        if (init) {
             return;
+        }
 
         INSTANCE = this;
-
-        context = getReactApplicationContext();
 
         //TODO for Samsung use "public MediaSessionCompat(Context context, String tag) "
         ComponentName compName = new ComponentName(context, MusicControlReceiver.class);
@@ -191,7 +188,6 @@ public class MusicControlModule extends ReactContextBaseJavaModule implements Co
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             context.startForegroundService(myIntent);
-
         } else {
             context.startService(myIntent);
         }
@@ -204,35 +200,26 @@ public class MusicControlModule extends ReactContextBaseJavaModule implements Co
 
     @ReactMethod
     public synchronized void stopControl() {
-        if (context == null) {
-            context = getReactApplicationContext();
-        }
-        Intent myIntent = new Intent();
-        myIntent.setComponent(new ComponentName(context.getPackageName(),
-                "com.brentvatne.lockscreen.MusicControlNotification$NotificationService"));
-        if (getReactApplicationContext() != null)
-            getReactApplicationContext().stopService(myIntent);
-        if (!init)
-            return;
-
-        if (notification != null)
+        if (notification != null) {
             notification.hide();
-        if (session != null)
+            notification = null;
+        }
+        if (session != null) {
             session.release();
+            session = null;
+        }
 
         try {
             if (receiver != null) {
                 context.unregisterReceiver(receiver);
+                receiver = null;
             }
         } catch (Exception e) {
             e.printStackTrace();
         }
         context.unregisterComponentCallbacks(this);
 
-        session = null;
-        notification = null;
         volume = null;
-        receiver = null;
         state = null;
         md = null;
         pb = null;
@@ -343,7 +330,6 @@ public class MusicControlModule extends ReactContextBaseJavaModule implements Co
 
     @ReactMethod
     synchronized public void updatePlayback(ReadableMap info) {
-        // init();
         if (state == null || volume == null || pb == null || session == null || notification == null || nb == null) {
             Log.e(TAG, "updatePlayback did not work, somethingwrong..");
             dump();
@@ -411,7 +397,6 @@ public class MusicControlModule extends ReactContextBaseJavaModule implements Co
             dump();
             return;
         }
-        // init();
 
         Map<String, Integer> skipOptions = new HashMap<String, Integer>();
 

@@ -1,10 +1,8 @@
 package com.brentvatne.lockscreen;
 
 import android.content.Intent;
-import android.os.Build;
 import android.os.Bundle;
 
-import androidx.core.content.ContextCompat;
 import androidx.media.VolumeProviderCompat;
 
 import android.support.v4.media.session.MediaSessionCompat;
@@ -50,13 +48,6 @@ public class MusicControlListener extends MediaSessionCompat.Callback {
         Log.d(TAG, "sendPlay Event");
         sendEvent(context, "play", null);
     }
-    private void stopForegroundService() {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            Intent intent = new Intent(context, MusicControlNotification.NotificationService.class);
-            intent.setAction(MusicControlNotification.NotificationService.STOP_SERVICE);
-            ContextCompat.startForegroundService(context, intent);
-        }
-    }
 
     @Override
     public boolean onMediaButtonEvent(Intent mediaButtonEvent) {
@@ -98,7 +89,6 @@ public class MusicControlListener extends MediaSessionCompat.Callback {
     @Override
     public void onStop() {
         Log.d(TAG, "stop Event");
-        stopForegroundService();
         sendEvent(context, "stop", null);
     }
 
