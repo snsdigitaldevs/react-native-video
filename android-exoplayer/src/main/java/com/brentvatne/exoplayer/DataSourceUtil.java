@@ -11,9 +11,11 @@ import com.google.android.exoplayer2.upstream.DefaultBandwidthMeter;
 import com.google.android.exoplayer2.util.Util;
 
 import java.util.Map;
+import java.util.Arrays;
 
 import okhttp3.JavaNetCookieJar;
 import okhttp3.OkHttpClient;
+import okhttp3.Protocol;
 
 
 public class DataSourceUtil {
@@ -48,6 +50,9 @@ public class DataSourceUtil {
 
     private static DataSource.Factory buildCustomDataSourceFactory(ReactContext context, DefaultBandwidthMeter bandwidthMeter, Map<String, String> requestHeaders) {
         OkHttpClient client = OkHttpClientProvider.getOkHttpClient();
+        if (client.protocols().contains(Protocol.HTTP_2)) {
+            client = client.newBuilder().protocols(Arrays.asList(Protocol.HTTP_1_1)).build();
+          }
         CookieJarContainer container = (CookieJarContainer) client.cookieJar();
         ForwardingCookieHandler handler = new ForwardingCookieHandler(context);
         container.setCookieJar(new JavaNetCookieJar(handler));
