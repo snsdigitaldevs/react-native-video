@@ -240,10 +240,14 @@ static int const RCTVideoUnset = -1;
 
 - (void)audioRouteChanged:(NSNotification *)notification
 {
-    NSNumber *reason = [[notification userInfo] objectForKey:AVAudioSessionRouteChangeReasonKey];
-    NSNumber *previousRoute = [[notification userInfo] objectForKey:AVAudioSessionRouteChangePreviousRouteKey];
-    if (reason.unsignedIntValue == AVAudioSessionRouteChangeReasonOldDeviceUnavailable) {
-      self.onVideoAudioBecomingNoisy(@{@"target": self.reactTag});
+    @try {
+      NSNumber *reason = [[notification userInfo] objectForKey:AVAudioSessionRouteChangeReasonKey];
+      NSNumber *previousRoute = [[notification userInfo] objectForKey:AVAudioSessionRouteChangePreviousRouteKey];
+      if (reason.unsignedIntValue == AVAudioSessionRouteChangeReasonOldDeviceUnavailable && self.onVideoAudioBecomingNoisy) {
+        self.onVideoAudioBecomingNoisy(@{@"target": self.reactTag});
+      }
+    } @catch (NSException *exception) {
+      NSLog(@"%@, exception: %@", NSStringFromSelector(_cmd), exception);
     }
 }
 
@@ -368,6 +372,7 @@ static int const RCTVideoUnset = -1;
         
       _player = [AVPlayer playerWithPlayerItem:_playerItem];
       _player.actionAtItemEnd = AVPlayerActionAtItemEndNone;
+      _player.automaticallyWaitsToMinimizeStalling = NO;
         
       [_player addObserver:self forKeyPath:playbackRate options:0 context:nil];
       _playbackRateObserverRegistered = YES;
@@ -1493,10 +1498,7 @@ static int const RCTVideoUnset = -1;
   }
   else
   {
-    [CATransaction begin];
-    [CATransaction setAnimationDuration:0];
     _playerLayer.frame = self.bounds;
-    [CATransaction commit];
   }
 }
 
@@ -1528,7 +1530,6 @@ static int const RCTVideoUnset = -1;
   [self removePlayerItemObservers];
   
   _eventDispatcher = nil;
-  [[NSNotificationCenter defaultCenter] removeObserver:self];
   
   [super removeFromSuperview];
 }
