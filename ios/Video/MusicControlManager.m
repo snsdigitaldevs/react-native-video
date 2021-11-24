@@ -396,7 +396,9 @@ RCT_EXPORT_METHOD(observeHeadsetPlayPause:(BOOL) observe) {
             BOOL fileExists = [[NSFileManager defaultManager] fileExistsAtPath:localArtworkUrl];
             if (fileExists) {
                 UIImage *image = [UIImage imageNamed:localArtworkUrl];
-                [self updateNowPlayingCenterWithImage:image];
+                if (image) {
+                    [self updateNowPlayingCenterWithImage:image];
+                }
             }
         }
     }
