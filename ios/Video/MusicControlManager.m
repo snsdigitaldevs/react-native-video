@@ -180,7 +180,10 @@ RCT_EXPORT_METHOD(enableControl:(NSString *) controlName enabled:(BOOL) enabled 
 
 RCT_EXPORT_METHOD(enableBackgroundMode:(BOOL) enabled){
     AVAudioSession *session = [AVAudioSession sharedInstance];
-    [session setCategory: AVAudioSessionCategoryPlayback error: nil];
+    [session setCategory:AVAudioSessionCategoryPlayback
+                    mode:AVAudioSessionModeSpokenAudio
+                 options:AVAudioSessionCategoryOptionInterruptSpokenAudioAndMixWithOthers
+                   error:nil];
     [session setActive: enabled error: nil];
 }
 
