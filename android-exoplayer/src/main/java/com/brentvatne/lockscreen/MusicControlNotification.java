@@ -7,15 +7,12 @@ import android.app.Service;
 import android.content.Intent;
 import android.content.res.Resources;
 import android.os.IBinder;
-
-import androidx.core.app.NotificationManagerCompat;
-
 import android.support.v4.media.session.PlaybackStateCompat;
-
-import androidx.core.app.NotificationCompat;
-
 import android.util.Log;
 import android.view.KeyEvent;
+
+import androidx.core.app.NotificationCompat;
+import androidx.core.app.NotificationManagerCompat;
 
 import com.facebook.react.bridge.ReactApplicationContext;
 
@@ -65,10 +62,8 @@ public class MusicControlNotification {
         play = createAction("play", "Play", mask, PlaybackStateCompat.ACTION_PLAY, play);
         pause = createAction("pause", "Pause", mask, PlaybackStateCompat.ACTION_PAUSE, pause);
         stop = createAction("stop", "Stop", mask, PlaybackStateCompat.ACTION_STOP, stop);
-        // next = createAction("next", "Next", mask, PlaybackStateCompat.ACTION_SKIP_TO_NEXT, next);
-        next = createAction("skip_forward_10", "Next", mask, PlaybackStateCompat.ACTION_SKIP_TO_NEXT, next);
-        //previous = createAction("previous", "Previous", mask, PlaybackStateCompat.ACTION_SKIP_TO_PREVIOUS, previous);
-        previous = createAction("skip_backward_10", "Previous", mask, PlaybackStateCompat.ACTION_SKIP_TO_PREVIOUS, previous);
+        next = createAction("next", "Next", mask, PlaybackStateCompat.ACTION_SKIP_TO_NEXT, next);
+        previous = createAction("previous", "Previous", mask, PlaybackStateCompat.ACTION_SKIP_TO_PREVIOUS, previous);
 
         if (options != null && options.containsKey("skipForward") && (options.get("skipForward") == 10 || options.get("skipForward") == 5 || options.get("skipForward") == 30)) {
             skipForward = createAction("skip_forward_" + options.get("skipForward").toString(), "Skip Forward", mask, PlaybackStateCompat.ACTION_FAST_FORWARD, skipForward);
@@ -95,8 +90,8 @@ public class MusicControlNotification {
         if (play != null) builder.addAction(play);
         if (pause != null) builder.addAction(pause);
         if (stop != null) builder.addAction(stop);
-        if (next != null) builder.addAction(next);
         if (skipForward != null) builder.addAction(skipForward);
+        if (next != null) builder.addAction(next);
 
         // Set whether notification can be closed based on closeNotification control (default PAUSED)
         if (module.notificationClose == MusicControlModule.NotificationClose.ALWAYS) {
