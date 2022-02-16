@@ -1,29 +1,26 @@
 package com.brentvatne.lockscreen;
 
-import android.app.NotificationManager;
 import android.app.NotificationChannel;
+import android.app.NotificationManager;
 import android.content.ComponentCallbacks2;
 import android.content.ComponentName;
+import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
-import android.content.Context;
 import android.content.res.Configuration;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.media.AudioManager;
-import android.os.SystemClock;
 import android.os.Build;
-
-import androidx.annotation.RequiresApi;
-
+import android.os.SystemClock;
 import android.support.v4.media.MediaMetadataCompat;
 import android.support.v4.media.session.MediaSessionCompat;
 import android.support.v4.media.session.PlaybackStateCompat;
+import android.util.Log;
 
+import androidx.annotation.RequiresApi;
 import androidx.core.app.NotificationCompat;
 import androidx.media.app.NotificationCompat.MediaStyle;
-
-import android.util.Log;
 
 import com.brentvatne.react.R;
 import com.facebook.common.executors.UiThreadImmediateExecutorService;
@@ -109,6 +106,7 @@ public class MusicControlModule extends ReactContextBaseJavaModule implements Co
         mChannel.setLockscreenVisibility(NotificationCompat.VISIBILITY_PUBLIC);
         mNotificationManager.createNotificationChannel(mChannel);
     }
+
     private boolean hasControl(long control) {
         return (controls & control) == control;
     }
@@ -120,26 +118,33 @@ public class MusicControlModule extends ReactContextBaseJavaModule implements Co
             if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) {
                 style.setMediaSession(session.getSessionToken());
             }
-            int controlCount = 0;
-            if(hasControl(PlaybackStateCompat.ACTION_PLAY)
-                    || hasControl(PlaybackStateCompat.ACTION_PAUSE)
-                    || hasControl(PlaybackStateCompat.ACTION_PLAY_PAUSE)) {
-                controlCount += 1;
+            if (hasControl(PlaybackStateCompat.ACTION_SKIP_TO_NEXT)
+                    || hasControl(PlaybackStateCompat.ACTION_SKIP_TO_PREVIOUS)) {
+                // according to LockScreenView enableControl()
+                style.setShowActionsInCompactView(0, 2, 4);
+            } else {
+                int controlCount = 0;
+                if (hasControl(PlaybackStateCompat.ACTION_PLAY)
+                        || hasControl(PlaybackStateCompat.ACTION_PAUSE)
+                        || hasControl(PlaybackStateCompat.ACTION_PLAY_PAUSE)) {
+                    controlCount += 1;
+                }
+                if (hasControl(PlaybackStateCompat.ACTION_FAST_FORWARD)) {
+                    controlCount += 1;
+                }
+                if (hasControl(PlaybackStateCompat.ACTION_REWIND)) {
+                    controlCount += 1;
+                }
+                int[] actions = new int[controlCount];
+                for (int i = 0; i < actions.length; i++) {
+                    actions[i] = i;
+                }
+                style.setShowActionsInCompactView(actions);
             }
-            if(hasControl(PlaybackStateCompat.ACTION_FAST_FORWARD)) {
-                controlCount += 1;
-            }
-            if(hasControl(PlaybackStateCompat.ACTION_REWIND)) {
-                controlCount += 1;
-            }
-            int[] actions = new int[controlCount];
-            for(int i=0; i<actions.length; i++) {
-                actions[i] = i;
-            }
-            style.setShowActionsInCompactView(actions);
             nb.setStyle(style);
         }
     }
+
     private void init() {
         if (init) {
             return;
@@ -256,7 +261,7 @@ public class MusicControlModule extends ReactContextBaseJavaModule implements Co
         // If a color is supplied, we need to clear the MediaStyle set during init().
         // Otherwise, the color will not be used for the notification's background.
         boolean removeFade = metadata.hasKey("color");
-        if(removeFade) {
+        if (removeFade) {
             nb.setStyle(new MediaStyle());
         }
 
@@ -365,7 +370,7 @@ public class MusicControlModule extends ReactContextBaseJavaModule implements Co
         state = pb.build();
         session.setPlaybackState(state);
 
-        if(session.isActive()) {
+        if (session.isActive()) {
             notification.show(nb, isPlaying);
         }
 
