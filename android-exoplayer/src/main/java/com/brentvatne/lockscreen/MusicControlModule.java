@@ -107,42 +107,43 @@ public class MusicControlModule extends ReactContextBaseJavaModule implements Co
         mNotificationManager.createNotificationChannel(mChannel);
     }
 
-    private boolean hasControl(long control) {
+    public boolean hasControl(long control) {
         return (controls & control) == control;
     }
 
     private void updateNotificationMediaStyle() {
-        if (!(Build.MANUFACTURER.toLowerCase(Locale.getDefault()).contains("huawei")
-                && Build.VERSION.SDK_INT < Build.VERSION_CODES.M)) {
-            MediaStyle style = new MediaStyle();
-            if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) {
-                style.setMediaSession(session.getSessionToken());
-            }
-            if (hasControl(PlaybackStateCompat.ACTION_SKIP_TO_NEXT)
-                    || hasControl(PlaybackStateCompat.ACTION_SKIP_TO_PREVIOUS)) {
-                // according to LockScreenView enableControl()
-                style.setShowActionsInCompactView(0, 2, 4);
-            } else {
-                int controlCount = 0;
-                if (hasControl(PlaybackStateCompat.ACTION_PLAY)
-                        || hasControl(PlaybackStateCompat.ACTION_PAUSE)
-                        || hasControl(PlaybackStateCompat.ACTION_PLAY_PAUSE)) {
-                    controlCount += 1;
-                }
-                if (hasControl(PlaybackStateCompat.ACTION_FAST_FORWARD)) {
-                    controlCount += 1;
-                }
-                if (hasControl(PlaybackStateCompat.ACTION_REWIND)) {
-                    controlCount += 1;
-                }
-                int[] actions = new int[controlCount];
-                for (int i = 0; i < actions.length; i++) {
-                    actions[i] = i;
-                }
-                style.setShowActionsInCompactView(actions);
-            }
-            nb.setStyle(style);
+        if ((Build.MANUFACTURER.toLowerCase(Locale.getDefault()).contains("huawei")
+                && Build.VERSION.SDK_INT < Build.VERSION_CODES.M) || nb == null) {
+            return;
         }
+        MediaStyle style = new MediaStyle();
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) {
+            style.setMediaSession(session.getSessionToken());
+        }
+        if (hasControl(PlaybackStateCompat.ACTION_SKIP_TO_NEXT)
+                || hasControl(PlaybackStateCompat.ACTION_SKIP_TO_PREVIOUS)) {
+            // according to LockScreenView enableControl()
+            style.setShowActionsInCompactView(0, 2, 4);
+        } else {
+            int controlCount = 0;
+            if (hasControl(PlaybackStateCompat.ACTION_PLAY)
+                    || hasControl(PlaybackStateCompat.ACTION_PAUSE)
+                    || hasControl(PlaybackStateCompat.ACTION_PLAY_PAUSE)) {
+                controlCount += 1;
+            }
+            if (hasControl(PlaybackStateCompat.ACTION_FAST_FORWARD)) {
+                controlCount += 1;
+            }
+            if (hasControl(PlaybackStateCompat.ACTION_REWIND)) {
+                controlCount += 1;
+            }
+            int[] actions = new int[controlCount];
+            for (int i = 0; i < actions.length; i++) {
+                actions[i] = i;
+            }
+            style.setShowActionsInCompactView(actions);
+        }
+        nb.setStyle(style);
     }
 
     private void init() {
@@ -385,13 +386,13 @@ public class MusicControlModule extends ReactContextBaseJavaModule implements Co
 
     @ReactMethod
     synchronized public void resetNowPlaying() {
-        if (!init)
+        if (!init) {
             return;
-
+        }
         md = new MediaMetadataCompat.Builder();
-
-        if (notification != null)
+        if (notification != null) {
             notification.hide();
+        }
         session.setActive(false);
     }
 
@@ -402,10 +403,8 @@ public class MusicControlModule extends ReactContextBaseJavaModule implements Co
             dump();
             return;
         }
-
-        Map<String, Integer> skipOptions = new HashMap<String, Integer>();
-
-        long controlValue = 0l;
+        Map<String, Integer> skipOptions = new HashMap<>();
+        long controlValue;
         switch (control) {
             case "skipForward":
                 if (options.hasKey("interval"))

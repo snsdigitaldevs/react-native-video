@@ -85,13 +85,15 @@ public class MusicControlNotification {
         }
         // Add the buttons
         builder.mActions.clear();
-        if (previous != null) builder.addAction(previous);
+        if (previous != null && module.hasControl(PlaybackStateCompat.ACTION_SKIP_TO_PREVIOUS)) {
+            builder.addAction(previous);
+        }
         if (skipBackward != null) builder.addAction(skipBackward);
         if (play != null) builder.addAction(play);
         if (pause != null) builder.addAction(pause);
         if (stop != null) builder.addAction(stop);
         if (skipForward != null) builder.addAction(skipForward);
-        if (next != null) builder.addAction(next);
+        if (next != null && module.hasControl(PlaybackStateCompat.ACTION_SKIP_TO_NEXT)) builder.addAction(next);
 
         // Set whether notification can be closed based on closeNotification control (default PAUSED)
         if (module.notificationClose == MusicControlModule.NotificationClose.ALWAYS) {
