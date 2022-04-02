@@ -371,11 +371,11 @@ public class MusicControlModule extends ReactContextBaseJavaModule implements Co
         state = pb.build();
         session.setPlaybackState(state);
 
+        updateNotificationMediaStyle();
+
         if (session.isActive()) {
             notification.show(nb, isPlaying);
         }
-
-        updateNotificationMediaStyle();
 
         if (remoteVolume) {
             session.setPlaybackToRemote(volume.create(null, maxVol, vol));
