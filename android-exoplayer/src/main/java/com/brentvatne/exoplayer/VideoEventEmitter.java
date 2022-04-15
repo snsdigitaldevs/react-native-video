@@ -1,8 +1,7 @@
 package com.brentvatne.exoplayer;
 
-import android.view.View;
-
 import androidx.annotation.StringDef;
+import android.view.View;
 
 import com.facebook.react.bridge.Arguments;
 import com.facebook.react.bridge.ReactContext;
@@ -126,9 +125,8 @@ class VideoEventEmitter {
 
     private static final String EVENT_PROP_TIMED_METADATA = "metadata";
 
-    private static final String EVENT_PROP_BITRATE = "bitrate";
+    private static final String EVENT_PROP_BITRATE = "bitrate";   
 
-    private static final int MAX_TRACE_DEPTH = 3;
 
     void setViewId(int viewId) {
         this.viewId = viewId;
@@ -182,7 +180,7 @@ class VideoEventEmitter {
         WritableMap event = Arguments.createMap();
         event.putDouble(EVENT_PROP_BITRATE, bitRateEstimate);
         receiveEvent(EVENT_BANDWIDTH, event);
-    }
+    }    
 
     void seek(long currentPosition, long seekTime) {
         WritableMap event = Arguments.createMap();
@@ -228,19 +226,7 @@ class VideoEventEmitter {
     void error(String errorString, Exception exception) {
         WritableMap error = Arguments.createMap();
         error.putString(EVENT_PROP_ERROR_STRING, errorString);
-        StringBuilder cause = new StringBuilder();
-        Throwable topException = exception;
-        int depth = 0;
-        while (topException != null && depth < MAX_TRACE_DEPTH) {
-            String message = topException.getMessage();
-            cause.append(topException.getClass().getSimpleName().replace("Exception", "")).append(':');
-            if (message != null) {
-                cause.append(message.substring(0, Math.min(25, message.length()))).append('|');
-            }
-            topException = topException.getCause();
-            depth++;
-        }
-        error.putString(EVENT_PROP_ERROR_EXCEPTION, cause.toString());
+        error.putString(EVENT_PROP_ERROR_EXCEPTION, exception.getMessage());
         WritableMap event = Arguments.createMap();
         event.putMap(EVENT_PROP_ERROR, error);
         receiveEvent(EVENT_ERROR, event);
@@ -248,7 +234,7 @@ class VideoEventEmitter {
 
     void playbackRateChange(float rate) {
         WritableMap map = Arguments.createMap();
-        map.putDouble(EVENT_PROP_PLAYBACK_RATE, (double) rate);
+        map.putDouble(EVENT_PROP_PLAYBACK_RATE, (double)rate);
         receiveEvent(EVENT_PLAYBACK_RATE_CHANGE, map);
     }
 
