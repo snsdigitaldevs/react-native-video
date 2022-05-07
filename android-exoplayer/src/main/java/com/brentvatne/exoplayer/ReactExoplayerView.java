@@ -21,6 +21,8 @@ import android.view.Window;
 import android.view.accessibility.CaptioningManager;
 import android.widget.FrameLayout;
 
+import com.brentvatne.lockscreen.MusicControlNotification;
+import com.brentvatne.lockscreen.Utils;
 import com.brentvatne.react.R;
 import com.brentvatne.receiver.AudioBecomingNoisyReceiver;
 import com.brentvatne.receiver.BecomingNoisyListener;
@@ -52,8 +54,8 @@ import com.google.android.exoplayer2.source.ExtractorMediaSource;
 import com.google.android.exoplayer2.source.MediaSource;
 import com.google.android.exoplayer2.source.MergingMediaSource;
 import com.google.android.exoplayer2.source.SingleSampleMediaSource;
-import com.google.android.exoplayer2.source.TrackGroupArray;
 import com.google.android.exoplayer2.source.TrackGroup;
+import com.google.android.exoplayer2.source.TrackGroupArray;
 import com.google.android.exoplayer2.source.dash.DashMediaSource;
 import com.google.android.exoplayer2.source.dash.DefaultDashChunkSource;
 import com.google.android.exoplayer2.source.hls.HlsMediaSource;
@@ -64,23 +66,19 @@ import com.google.android.exoplayer2.trackselection.DefaultTrackSelector;
 import com.google.android.exoplayer2.trackselection.MappingTrackSelector;
 import com.google.android.exoplayer2.trackselection.TrackSelection;
 import com.google.android.exoplayer2.trackselection.TrackSelectionArray;
+import com.google.android.exoplayer2.ui.PlayerControlView;
+import com.google.android.exoplayer2.upstream.BandwidthMeter;
 import com.google.android.exoplayer2.upstream.DataSource;
 import com.google.android.exoplayer2.upstream.DefaultAllocator;
-import com.google.android.exoplayer2.upstream.BandwidthMeter;
 import com.google.android.exoplayer2.upstream.DefaultBandwidthMeter;
 import com.google.android.exoplayer2.util.Util;
-import com.google.android.exoplayer2.ui.PlayerControlView;
-import com.brentvatne.lockscreen.MusicControlNotification;
-import com.brentvatne.lockscreen.Utils;
 
 import java.net.CookieHandler;
 import java.net.CookieManager;
 import java.net.CookiePolicy;
-import java.lang.Math;
-import java.util.Map;
-import java.lang.Object;
 import java.util.ArrayList;
 import java.util.Locale;
+import java.util.Map;
 
 
 @SuppressLint("ViewConstructor")
@@ -163,6 +161,9 @@ class ReactExoplayerView extends FrameLayout implements
 
     private AudioFocusRequest mFocusRequest;
 
+    private WakeLockManager wakeLockManager;
+    private WifiLockManager wifiLockManager;
+
     private final Handler progressHandler = new Handler() {
         @Override
         public void handleMessage(Message msg) {
@@ -219,8 +220,11 @@ class ReactExoplayerView extends FrameLayout implements
     public ReactExoplayerView(ThemedReactContext context) {
         super(context);
         this.themedReactContext = context;
-
         this.eventEmitter = new VideoEventEmitter(context);
+        this.wakeLockManager = new WakeLockManager(context);
+        this.wakeLockManager.setEnabled(true);
+        this.wifiLockManager = new WifiLockManager(context);
+        this.wifiLockManager.setEnabled(true);
 
         createViews();
 
@@ -324,7 +328,18 @@ class ReactExoplayerView extends FrameLayout implements
         }
     }
 
+    @Override
+    public void setKeepScreenOn(boolean keepScreenOn) {
+        updateWakeAndWifiLock(keepScreenOn);
+        super.setKeepScreenOn(keepScreenOn);
+    }
+
     // Internal methods
+
+    private void updateWakeAndWifiLock(boolean shouldStayAwake) {
+        wakeLockManager.setStayAwake(shouldStayAwake);
+        wifiLockManager.setStayAwake(shouldStayAwake);
+    }
 
     /**
      * Toggling the visibility of the player control view
@@ -758,6 +773,7 @@ class ReactExoplayerView extends FrameLayout implements
     @Override
     public void onPlayerStateChanged(boolean playWhenReady, int playbackState) {
         String text = "onStateChanged: playWhenReady=" + playWhenReady + ", playbackState=";
+        updateWakeAndWifiLock(playWhenReady && (playbackState == Player.STATE_READY || playbackState == Player.STATE_BUFFERING));
         switch (playbackState) {
             case Player.STATE_IDLE:
                 text += "idle";
