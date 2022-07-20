@@ -263,12 +263,12 @@ RCT_EXPORT_METHOD(observeHeadsetPlayPause:(BOOL) observe) {
     self = [super init];
     [self addObservers];
     self.audioInterruptionsObserved = false;
+    self.observeHeadsetPlayPause = false;
     [[UIApplication sharedApplication] beginReceivingRemoteControlEvents];
     return self;
 }
 
 - (void)addObservers {
-    [[NSNotificationCenter defaultCenter] removeObserver:self];
     [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(audioHardwareRouteChanged:) name:AVAudioSessionRouteChangeNotification object:nil];
 }
 
@@ -279,6 +279,7 @@ RCT_EXPORT_METHOD(observeHeadsetPlayPause:(BOOL) observe) {
 
 - (void)dealloc {
     [self stop];
+    [[UIApplication sharedApplication] endReceivingRemoteControlEvents];
     [[NSNotificationCenter defaultCenter] removeObserver:self];
 }
 
@@ -297,6 +298,7 @@ RCT_EXPORT_METHOD(observeHeadsetPlayPause:(BOOL) observe) {
     [self toggleHandler:remoteCenter.skipBackwardCommand withSelector:@selector(onSkipBackward:) enabled:false];
     [self toggleHandler:remoteCenter.skipForwardCommand withSelector:@selector(onSkipForward:) enabled:false];
     [self observeAudioInterruptions:false];
+    [self observeHeadsetPlayPause:false];
 }
 
 - (MPRemoteCommandHandlerStatus)onPause:(MPRemoteCommandEvent*)event {
