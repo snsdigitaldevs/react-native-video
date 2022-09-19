@@ -2,6 +2,7 @@ package com.brentvatne.lockscreen;
 
 import android.app.NotificationChannel;
 import android.app.NotificationManager;
+import android.app.PendingIntent;
 import android.content.ComponentCallbacks2;
 import android.content.ComponentName;
 import android.content.Context;
@@ -155,7 +156,12 @@ public class MusicControlModule extends ReactContextBaseJavaModule implements Co
 
         //TODO for Samsung use "public MediaSessionCompat(Context context, String tag) "
         ComponentName compName = new ComponentName(context, MusicControlReceiver.class);
-        session = new MediaSessionCompat(context, "MusicControl", compName, null);
+        Intent mediaButtonIntent = new Intent(Intent.ACTION_MEDIA_BUTTON);
+        // the associated intent will be handled by the component being registered
+        mediaButtonIntent.setComponent(compName);
+        PendingIntent mbrIntent = PendingIntent.getBroadcast(context,
+                0, mediaButtonIntent, PendingIntent.FLAG_IMMUTABLE | PendingIntent.FLAG_ONE_SHOT);
+        session = new MediaSessionCompat(context, "MusicControl", compName, mbrIntent);
         session.setFlags(
                 MediaSessionCompat.FLAG_HANDLES_MEDIA_BUTTONS | MediaSessionCompat.FLAG_HANDLES_TRANSPORT_CONTROLS);
         session.setCallback(new MusicControlListener(context));

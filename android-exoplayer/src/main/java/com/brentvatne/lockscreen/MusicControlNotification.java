@@ -6,6 +6,7 @@ import android.app.PendingIntent;
 import android.app.Service;
 import android.content.Intent;
 import android.content.res.Resources;
+import android.os.Build;
 import android.os.IBinder;
 import android.support.v4.media.session.PlaybackStateCompat;
 import android.util.Log;
@@ -110,12 +111,14 @@ public class MusicControlNotification {
         String packageName = context.getPackageName();
         Intent openApp = context.getPackageManager().getLaunchIntentForPackage(packageName);
         if (openApp != null) {
-            builder.setContentIntent(PendingIntent.getActivity(context, 0, openApp, 0));
+            int flag = Build.VERSION.SDK_INT >= Build.VERSION_CODES.M ? (PendingIntent.FLAG_IMMUTABLE | PendingIntent.FLAG_ONE_SHOT) : PendingIntent.FLAG_ONE_SHOT;
+            builder.setContentIntent(PendingIntent.getActivity(context, 0, openApp, flag));
         }
         // Remove notification
         Intent remove = new Intent(REMOVE_NOTIFICATION);
         remove.putExtra(PACKAGE_NAME, context.getApplicationInfo().packageName);
-        builder.setDeleteIntent(PendingIntent.getBroadcast(context, 0, remove, PendingIntent.FLAG_UPDATE_CURRENT));
+        int flag = Build.VERSION.SDK_INT >= Build.VERSION_CODES.M ? (PendingIntent.FLAG_IMMUTABLE | PendingIntent.FLAG_UPDATE_CURRENT) : PendingIntent.FLAG_UPDATE_CURRENT;
+        builder.setDeleteIntent(PendingIntent.getBroadcast(context, 0, remove, flag));
 
         return builder.build();
     }
@@ -149,7 +152,8 @@ public class MusicControlNotification {
         Intent intent = new Intent(MEDIA_BUTTON);
         intent.putExtra(Intent.EXTRA_KEY_EVENT, new KeyEvent(KeyEvent.ACTION_DOWN, keyCode));
         intent.putExtra(PACKAGE_NAME, packageName);
-        PendingIntent i = PendingIntent.getBroadcast(context, keyCode, intent, PendingIntent.FLAG_UPDATE_CURRENT);
+        int flag = Build.VERSION.SDK_INT >= Build.VERSION_CODES.M ? (PendingIntent.FLAG_IMMUTABLE | PendingIntent.FLAG_UPDATE_CURRENT) : PendingIntent.FLAG_UPDATE_CURRENT;
+        PendingIntent i = PendingIntent.getBroadcast(context, keyCode, intent, flag);
 
         return new NotificationCompat.Action(icon, title, i);
     }
