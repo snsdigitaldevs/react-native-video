@@ -1,4 +1,5 @@
 apply plugin: 'com.android.library'
+apply plugin: 'org.jetbrains.kotlin.android'
 
 def safeExtGet(prop, fallback) {
     rootProject.ext.has(prop) ? rootProject.ext.get(prop) : fallback
@@ -23,7 +24,7 @@ android {
 
 dependencies {
     implementation "com.facebook.react:react-native:${safeExtGet('reactNativeVersion', '+')}"
-    implementation('com.google.android.exoplayer:exoplayer:2.9.3') {
+    implementation('com.google.android.exoplayer:exoplayer:2.9.6') {
         exclude group: 'com.android.support'
     }
 
@@ -36,5 +37,9 @@ dependencies {
         exclude group: 'com.squareup.okhttp3', module: 'okhttp'
     }
     implementation 'com.squareup.okhttp3:okhttp:3.12.1'
+    implementation 'androidx.core:core-ktx:1.6.0'
 
+    implementation 'com.google.android.exoplayer:extension-mediasession:2.9.6'
+    implementation 'org.jetbrains.kotlinx:kotlinx-coroutines-android:1.6.1'
+    implementation 'com.google.code.gson:gson:2.8.5'
 }

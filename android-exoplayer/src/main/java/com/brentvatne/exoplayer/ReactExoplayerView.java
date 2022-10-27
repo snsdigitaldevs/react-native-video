@@ -23,6 +23,7 @@ import android.widget.FrameLayout;
 
 import com.brentvatne.lockscreen.MusicControlNotification;
 import com.brentvatne.lockscreen.Utils;
+import com.brentvatne.media.play.PlayerConnector;
 import com.brentvatne.react.R;
 import com.brentvatne.receiver.AudioBecomingNoisyReceiver;
 import com.brentvatne.receiver.BecomingNoisyListener;
@@ -45,11 +46,13 @@ import com.google.android.exoplayer2.Player;
 import com.google.android.exoplayer2.SimpleExoPlayer;
 import com.google.android.exoplayer2.Timeline;
 import com.google.android.exoplayer2.extractor.DefaultExtractorsFactory;
+import com.google.android.exoplayer2.extractor.ExtractorsFactory;
 import com.google.android.exoplayer2.mediacodec.MediaCodecRenderer;
 import com.google.android.exoplayer2.mediacodec.MediaCodecUtil;
 import com.google.android.exoplayer2.metadata.Metadata;
 import com.google.android.exoplayer2.metadata.MetadataRenderer;
 import com.google.android.exoplayer2.source.BehindLiveWindowException;
+import com.google.android.exoplayer2.source.ConcatenatingMediaSource;
 import com.google.android.exoplayer2.source.ExtractorMediaSource;
 import com.google.android.exoplayer2.source.MediaSource;
 import com.google.android.exoplayer2.source.MergingMediaSource;
@@ -77,6 +80,7 @@ import java.net.CookieHandler;
 import java.net.CookieManager;
 import java.net.CookiePolicy;
 import java.util.ArrayList;
+import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 
@@ -381,7 +385,7 @@ class ReactExoplayerView extends FrameLayout implements
             public void onPlayerStateChanged(boolean playWhenReady, int playbackState) {
                 reLayout(playPauseControlContainer);
                 //Remove this eventListener once its executed. since UI will work fine once after the reLayout is done
-                player.removeListener(eventListener);
+                if (player != null)  player.removeListener(eventListener);
             }
         };
         player.addListener(eventListener);
@@ -444,19 +448,11 @@ class ReactExoplayerView extends FrameLayout implements
                     player.setPlaybackParameters(params);
                 }
                 if (playerNeedsSource && srcUri != null) {
-                    ArrayList<MediaSource> mediaSourceList = buildTextSources();
-                    MediaSource videoSource = buildMediaSource(srcUri, extension);
-                    MediaSource mediaSource;
-                    if (mediaSourceList.size() == 0) {
-                        mediaSource = videoSource;
-                    } else {
-                        mediaSourceList.add(0, videoSource);
-                        MediaSource[] textSourceArray = mediaSourceList.toArray(
-                                new MediaSource[mediaSourceList.size()]
-                        );
-                        mediaSource = new MergingMediaSource(textSourceArray);
-                    }
-
+                    List<MediaSource> mediaSourcesList = PlayerConnector.INSTANCE
+                            .buildMediaSourceList((uri, extension) -> buildMediaSource(uri, extension));
+                    ConcatenatingMediaSource mediaSource = new ConcatenatingMediaSource(mediaSourcesList.toArray(new MediaSource[0]));
+                    PlayerConnector.INSTANCE.connectPlayer(player);
+                    resumeWindow = PlayerConnector.INSTANCE.mapCurrentWindowIndex(srcUri);
                     boolean haveResumePosition = resumeWindow != C.INDEX_UNSET;
                     if (haveResumePosition) {
                         player.seekTo(resumeWindow, resumePosition);
@@ -1075,8 +1071,14 @@ class ReactExoplayerView extends FrameLayout implements
     }
 
     private void reloadSource() {
-        playerNeedsSource = true;
-        initializePlayer();
+        int currentWindowIndex = PlayerConnector.INSTANCE.mapCurrentWindowIndex(srcUri);
+        if (currentWindowIndex != -1) {
+            player.seekTo(currentWindowIndex, resumePosition);
+            eventEmitter.loadStart();
+            loadVideoStarted = true;
+        } else {
+            initializePlayer();
+        }
     }
 
     public void setResizeModeModifier(@ResizeMode.Mode int resizeMode) {
