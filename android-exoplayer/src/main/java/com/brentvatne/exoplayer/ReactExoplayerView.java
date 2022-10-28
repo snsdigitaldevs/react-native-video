@@ -385,7 +385,7 @@ class ReactExoplayerView extends FrameLayout implements
             public void onPlayerStateChanged(boolean playWhenReady, int playbackState) {
                 reLayout(playPauseControlContainer);
                 //Remove this eventListener once its executed. since UI will work fine once after the reLayout is done
-                if (player != null)  player.removeListener(eventListener);
+                if (player != null) player.removeListener(eventListener);
             }
         };
         player.addListener(eventListener);
@@ -424,51 +424,49 @@ class ReactExoplayerView extends FrameLayout implements
     private void initializePlayer() {
         ReactExoplayerView self = this;
         // This ensures all props have been setted, to avoid async racing conditions.
-        new Handler().postDelayed(new Runnable() {
-            @Override
-            public void run() {
-                if (player == null) {
-                    TrackSelection.Factory videoTrackSelectionFactory = new AdaptiveTrackSelection.Factory(BANDWIDTH_METER);
-                    trackSelector = new DefaultTrackSelector(videoTrackSelectionFactory);
-                    trackSelector.setParameters(trackSelector.buildUponParameters()
-                            .setMaxVideoBitrate(maxBitRate == 0 ? Integer.MAX_VALUE : maxBitRate));
+        new Handler().postDelayed(() -> {
+            if (player == null) {
+                TrackSelection.Factory videoTrackSelectionFactory = new AdaptiveTrackSelection.Factory(BANDWIDTH_METER);
+                trackSelector = new DefaultTrackSelector(videoTrackSelectionFactory);
+                trackSelector.setParameters(trackSelector.buildUponParameters()
+                        .setMaxVideoBitrate(maxBitRate == 0 ? Integer.MAX_VALUE : maxBitRate));
 
-                    DefaultAllocator allocator = new DefaultAllocator(true, C.DEFAULT_BUFFER_SEGMENT_SIZE);
-                    DefaultLoadControl defaultLoadControl = new DefaultLoadControl(allocator, minBufferMs, maxBufferMs, bufferForPlaybackMs, bufferForPlaybackAfterRebufferMs, -1, true);
-                    player = ExoPlayerFactory.newSimpleInstance(getContext(), trackSelector, defaultLoadControl);
-                    player.addListener(self);
-                    player.addMetadataOutput(self);
-                    exoPlayerView.setPlayer(player);
-                    audioBecomingNoisyReceiver.setListener(self);
-                    BANDWIDTH_METER.addEventListener(new Handler(), self);
-                    setPlayWhenReady(!isPaused);
-                    playerNeedsSource = true;
+                DefaultAllocator allocator = new DefaultAllocator(true, C.DEFAULT_BUFFER_SEGMENT_SIZE);
+                DefaultLoadControl defaultLoadControl = new DefaultLoadControl(allocator, minBufferMs, maxBufferMs, bufferForPlaybackMs, bufferForPlaybackAfterRebufferMs, -1, true);
+                player = ExoPlayerFactory.newSimpleInstance(getContext(), trackSelector, defaultLoadControl);
+                player.addListener(self);
+                player.addMetadataOutput(self);
+                exoPlayerView.setPlayer(player);
+                audioBecomingNoisyReceiver.setListener(self);
+                BANDWIDTH_METER.addEventListener(new Handler(), self);
+                setPlayWhenReady(!isPaused);
+                playerNeedsSource = true;
 
-                    PlaybackParameters params = new PlaybackParameters(rate, 1f);
-                    player.setPlaybackParameters(params);
-                }
-                if (playerNeedsSource && srcUri != null) {
-                    List<MediaSource> mediaSourcesList = PlayerConnector.INSTANCE
-                            .buildMediaSourceList((uri, extension) -> buildMediaSource(uri, extension));
-                    ConcatenatingMediaSource mediaSource = new ConcatenatingMediaSource(mediaSourcesList.toArray(new MediaSource[0]));
-                    PlayerConnector.INSTANCE.connectPlayer(player);
-                    resumeWindow = PlayerConnector.INSTANCE.mapCurrentWindowIndex(srcUri);
-                    boolean haveResumePosition = resumeWindow != C.INDEX_UNSET;
-                    if (haveResumePosition) {
-                        player.seekTo(resumeWindow, resumePosition);
-                    }
-                    player.prepare(mediaSource, !haveResumePosition, false);
-                    playerNeedsSource = false;
-
-                    eventEmitter.loadStart();
-                    loadVideoStarted = true;
-                }
-
-                // Initializing the playerControlView
-                initializePlayerControl();
-                setControls(controls);
-                applyModifiers();
+                PlaybackParameters params = new PlaybackParameters(rate, 1f);
+                player.setPlaybackParameters(params);
             }
+            if (playerNeedsSource && srcUri != null) {
+                List<MediaSource> mediaSourcesList = PlayerConnector.INSTANCE
+                        .buildMediaSourceList(this::buildMediaSource);
+                ConcatenatingMediaSource mediaSource = new ConcatenatingMediaSource(mediaSourcesList.toArray(new MediaSource[0]));
+                PlayerConnector.INSTANCE.connectPlayer(player);
+                Log.i(TAG, "ConcatenatingMediaSource size:" + mediaSource.getSize());
+                resumeWindow = PlayerConnector.INSTANCE.mapCurrentWindowIndex(srcUri);
+                boolean haveResumePosition = resumeWindow != C.INDEX_UNSET;
+                if (haveResumePosition) {
+                    player.seekTo(resumeWindow, resumePosition);
+                }
+                player.prepare(mediaSource, !haveResumePosition, false);
+                playerNeedsSource = false;
+
+                eventEmitter.loadStart();
+                loadVideoStarted = true;
+            }
+
+            // Initializing the playerControlView
+            initializePlayerControl();
+            setControls(controls);
+            applyModifiers();
         }, 1);
     }
 

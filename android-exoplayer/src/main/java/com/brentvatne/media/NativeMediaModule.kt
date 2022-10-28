@@ -27,121 +27,124 @@ const val ACTION_EXECUTED_SUCCESS = "ACTION_EXECUTED_SUCCESS"
 private const val TIME_OUT = 3000L
 
 class NativeMediaModule(private val reactContext: ReactApplicationContext) :
-  ReactContextBaseJavaModule(reactContext), LifecycleEventListener {
+    ReactContextBaseJavaModule(reactContext), LifecycleEventListener {
 
-  private var mediaController: MediaControllerCompat? = null
-  private val mediaServiceConnectionCallback = MediaServiceConnectionCallback(reactContext)
-  private var mediaBrowser: MediaBrowserCompat? = null
+    private var mediaController: MediaControllerCompat? = null
+    private val mediaServiceConnectionCallback = MediaServiceConnectionCallback(reactContext)
+    private var mediaBrowser: MediaBrowserCompat? = null
 
-  init {
-    Log.i("chenxin", "============create NativeMediaModule================")
-    reactContext.addLifecycleEventListener(this)
-  }
-
-  override fun getName(): String {
-    return this.javaClass.simpleName
-  }
-
-  /**
-   * Send action from react-native to native
-   *
-   */
-  @ReactMethod
-  fun sendAction(
-    action: String,
-    actionState: String,
-    params: ReadableMap? = null
-  ) {
-    val startTime = System.currentTimeMillis()
-    while (true) {
-      if (System.currentTimeMillis() - startTime > TIME_OUT) break
-      if (mediaBrowser?.isConnected == true) {
-        mediaBrowser?.sendCustomAction(
-          ACTION_NAMESPACE.plus(action),
-          Bundle().apply {
-            putString(KEY_BUNDLE_ACTION_STATE, actionState)
-            putString(KEY_BUNDLE_PRODUCT_INFO, params?.toHashMap()?.get("data").toString())
-          },
-          null
-        )
-        break
-      }
-    }
-  }
-
-  private fun emitEvent(eventName: String, params: WritableMap) {
-    reactContext.getJSModule(DeviceEventManagerModule.RCTDeviceEventEmitter::class.java)
-      .emit(eventName, params)
-  }
-
-  private val controllerCallback = object : MediaControllerCompat.Callback() {
-
-    override fun onMetadataChanged(metadata: MediaMetadataCompat?) {
-      super.onMetadataChanged(metadata)
-      val params = Arguments.createMap()
-      val mediaId = metadata?.description?.mediaId
-      params.putString("mediaId", mediaId)
-      emitEvent("onMediaChange", params)
+    init {
+        reactContext.addLifecycleEventListener(this)
     }
 
-    override fun onPlaybackStateChanged(state: PlaybackStateCompat?) {
-      super.onPlaybackStateChanged(state)
+    override fun getName(): String {
+        return this.javaClass.simpleName
     }
-  }
 
-  private inner class MediaServiceConnectionCallback(private val context: ReactApplicationContext) :
-    ConnectionCallback() {
-    override fun onConnected() {
-      super.onConnected()
-
-      mediaController = mediaBrowser?.sessionToken?.let {
-        MediaControllerCompat(
-          context,
-          it
-        ).apply { registerCallback(controllerCallback) }
-      }
-
-      mediaBrowser?.root?.let { mediaBrowser?.subscribe(it, subscriptionCallback) }
-    }
-  }
-
-  private val subscriptionCallback = object : MediaBrowserCompat.SubscriptionCallback() {
-    override fun onChildrenLoaded(
-      parentId: String,
-      children: MutableList<MediaBrowserCompat.MediaItem>
+    /**
+     * Send action from react-native to native
+     *
+     */
+    @ReactMethod
+    fun sendAction(
+        action: String,
+        actionState: String,
+        params: ReadableMap? = null
     ) {
-      val mediaId = if (children.size > 0) children[0].mediaId else null
-      mediaController?.transportControls?.prepareFromMediaId(mediaId, Bundle.EMPTY)
+        val startTime = System.currentTimeMillis()
+        while (true) {
+            if (System.currentTimeMillis() - startTime > TIME_OUT) break
+            if (mediaBrowser?.isConnected == true) {
+                mediaBrowser?.sendCustomAction(
+                    ACTION_NAMESPACE.plus(action),
+                    Bundle().apply {
+                        putString(KEY_BUNDLE_ACTION_STATE, actionState)
+                        putString(
+                            KEY_BUNDLE_PRODUCT_INFO,
+                            params?.toHashMap()?.get("data").toString()
+                        )
+                    },
+                    null
+                )
+                break
+            }
+        }
     }
-  }
 
-  private fun initMediaBrowser() {
-    if (mediaBrowser == null) {
-      mediaBrowser = MediaBrowserCompat(
-        currentActivity,
-        ComponentName(reactContext, MediaService::class.java),
-        mediaServiceConnectionCallback,
-        null
-      )
+    private fun emitEvent(eventName: String, params: WritableMap) {
+        reactContext.getJSModule(DeviceEventManagerModule.RCTDeviceEventEmitter::class.java)
+            .emit(eventName, params)
     }
 
-    mediaBrowser?.apply {
-      if (!isConnected) {
-        connect()
-      }
+    private val controllerCallback = object : MediaControllerCompat.Callback() {
+
+        override fun onMetadataChanged(metadata: MediaMetadataCompat?) {
+            super.onMetadataChanged(metadata)
+            val params = Arguments.createMap()
+            val mediaId = metadata?.description?.mediaId
+            params.putString("mediaId", mediaId)
+            emitEvent("onMediaChange", params)
+        }
+
+        override fun onPlaybackStateChanged(state: PlaybackStateCompat?) {
+            super.onPlaybackStateChanged(state)
+        }
     }
-  }
 
-  override fun onHostResume() {
-    initMediaBrowser()
-  }
+    private inner class MediaServiceConnectionCallback(private val context: ReactApplicationContext) :
+        ConnectionCallback() {
+        override fun onConnected() {
+            super.onConnected()
 
-  override fun onHostPause() {
-    // Not implement
-  }
+            mediaController = mediaBrowser?.sessionToken?.let {
+                MediaControllerCompat(
+                    context,
+                    it
+                ).apply { registerCallback(controllerCallback) }
+            }
 
-  override fun onHostDestroy() {
-    mediaBrowser?.disconnect()
-    mediaBrowser = null
-  }
+            mediaBrowser?.root?.let { mediaBrowser?.subscribe(it, subscriptionCallback) }
+
+        }
+    }
+
+    private val subscriptionCallback = object : MediaBrowserCompat.SubscriptionCallback() {
+        override fun onChildrenLoaded(
+            parentId: String,
+            children: MutableList<MediaBrowserCompat.MediaItem>
+        ) {
+            val mediaId = if (children.size > 0) children[0].mediaId else null
+            mediaController?.transportControls?.prepareFromMediaId(mediaId, Bundle.EMPTY)
+        }
+    }
+
+    private fun initMediaBrowser() {
+        if (mediaBrowser == null) {
+            mediaBrowser = MediaBrowserCompat(
+                currentActivity,
+                ComponentName(reactContext, MediaService::class.java),
+                mediaServiceConnectionCallback,
+                null
+            )
+        }
+
+        mediaBrowser?.apply {
+            if (!isConnected) {
+                connect()
+            }
+        }
+    }
+
+    override fun onHostResume() {
+        initMediaBrowser()
+    }
+
+    override fun onHostPause() {
+        // Not implement
+    }
+
+    override fun onHostDestroy() {
+        mediaBrowser?.disconnect()
+        mediaBrowser = null
+    }
 }
