@@ -151,63 +151,66 @@ public class MusicControlModule extends ReactContextBaseJavaModule implements Co
         if (init) {
             return;
         }
+        try {
+            INSTANCE = this;
 
-        INSTANCE = this;
+            //TODO for Samsung use "public MediaSessionCompat(Context context, String tag) "
+            ComponentName compName = new ComponentName(context, MusicControlReceiver.class);
+            Intent mediaButtonIntent = new Intent(Intent.ACTION_MEDIA_BUTTON);
+            // the associated intent will be handled by the component being registered
+            mediaButtonIntent.setComponent(compName);
+            PendingIntent mbrIntent = PendingIntent.getBroadcast(context,
+                    0, mediaButtonIntent, PendingIntent.FLAG_IMMUTABLE | PendingIntent.FLAG_ONE_SHOT);
+            session = new MediaSessionCompat(context, "MusicControl", compName, mbrIntent);
+            session.setFlags(
+                    MediaSessionCompat.FLAG_HANDLES_MEDIA_BUTTONS | MediaSessionCompat.FLAG_HANDLES_TRANSPORT_CONTROLS);
+            session.setCallback(new MusicControlListener(context));
 
-        //TODO for Samsung use "public MediaSessionCompat(Context context, String tag) "
-        ComponentName compName = new ComponentName(context, MusicControlReceiver.class);
-        Intent mediaButtonIntent = new Intent(Intent.ACTION_MEDIA_BUTTON);
-        // the associated intent will be handled by the component being registered
-        mediaButtonIntent.setComponent(compName);
-        PendingIntent mbrIntent = PendingIntent.getBroadcast(context,
-                0, mediaButtonIntent, PendingIntent.FLAG_IMMUTABLE | PendingIntent.FLAG_ONE_SHOT);
-        session = new MediaSessionCompat(context, "MusicControl", compName, mbrIntent);
-        session.setFlags(
-                MediaSessionCompat.FLAG_HANDLES_MEDIA_BUTTONS | MediaSessionCompat.FLAG_HANDLES_TRANSPORT_CONTROLS);
-        session.setCallback(new MusicControlListener(context));
+            volume = new MusicControlListener.VolumeListener(context, true, 100, 100);
+            if (remoteVolume) {
+                session.setPlaybackToRemote(volume);
+            } else {
+                session.setPlaybackToLocal(AudioManager.STREAM_MUSIC);
+            }
 
-        volume = new MusicControlListener.VolumeListener(context, true, 100, 100);
-        if (remoteVolume) {
-            session.setPlaybackToRemote(volume);
-        } else {
-            session.setPlaybackToLocal(AudioManager.STREAM_MUSIC);
+            md = new MediaMetadataCompat.Builder();
+            pb = new PlaybackStateCompat.Builder();
+            pb.setActions(controls);
+
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                createChannel(context);
+            }
+            nb = new NotificationCompat.Builder(context, CHANNEL_ID);
+            nb.setVisibility(NotificationCompat.VISIBILITY_PUBLIC);
+
+            state = pb.build();
+
+            notification = new MusicControlNotification(this, context);
+            notification.updateActions(controls, null);
+
+            IntentFilter filter = new IntentFilter();
+            filter.addAction(MusicControlNotification.REMOVE_NOTIFICATION);
+            filter.addAction(MusicControlNotification.MEDIA_BUTTON);
+            filter.addAction(Intent.ACTION_MEDIA_BUTTON);
+            filter.addAction(AudioManager.ACTION_AUDIO_BECOMING_NOISY);
+            receiver = new MusicControlReceiver(this, context);
+            context.registerReceiver(receiver, filter);
+
+            Intent myIntent = new Intent(context, MusicControlNotification.NotificationService.class);
+
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                context.startForegroundService(myIntent);
+            } else {
+                context.startService(myIntent);
+            }
+
+            context.registerComponentCallbacks(this);
+
+            isPlaying = false;
+            init = true;
+        } catch (Exception e) {
+            e.printStackTrace();
         }
-
-        md = new MediaMetadataCompat.Builder();
-        pb = new PlaybackStateCompat.Builder();
-        pb.setActions(controls);
-
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            createChannel(context);
-        }
-        nb = new NotificationCompat.Builder(context, CHANNEL_ID);
-        nb.setVisibility(NotificationCompat.VISIBILITY_PUBLIC);
-
-        state = pb.build();
-
-        notification = new MusicControlNotification(this, context);
-        notification.updateActions(controls, null);
-
-        IntentFilter filter = new IntentFilter();
-        filter.addAction(MusicControlNotification.REMOVE_NOTIFICATION);
-        filter.addAction(MusicControlNotification.MEDIA_BUTTON);
-        filter.addAction(Intent.ACTION_MEDIA_BUTTON);
-        filter.addAction(AudioManager.ACTION_AUDIO_BECOMING_NOISY);
-        receiver = new MusicControlReceiver(this, context);
-        context.registerReceiver(receiver, filter);
-
-        Intent myIntent = new Intent(context, MusicControlNotification.NotificationService.class);
-
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            context.startForegroundService(myIntent);
-        } else {
-            context.startService(myIntent);
-        }
-
-        context.registerComponentCallbacks(this);
-
-        isPlaying = false;
-        init = true;
     }
 
     @ReactMethod
