@@ -43,8 +43,15 @@ public class MusicControlListener extends MediaSessionCompat.Callback {
         this.context = context;
     }
 
+    private long lastSendTime;
+
     @Override
     public void onPlay() {
+        long currentSendTime = System.currentTimeMillis();
+        if (currentSendTime - lastSendTime < 100) {
+            return;
+        }
+        lastSendTime = currentSendTime;
         Log.d(TAG, "sendPlay Event");
         sendEvent(context, "play", null);
     }

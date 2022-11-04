@@ -4,7 +4,6 @@ import android.annotation.TargetApi;
 import android.content.Context;
 import androidx.core.content.ContextCompat;
 import android.util.AttributeSet;
-import android.util.Log;
 import android.view.Gravity;
 import android.view.SurfaceView;
 import android.view.TextureView;
@@ -27,7 +26,6 @@ import com.google.android.exoplayer2.text.TextOutput;
 
 import java.util.List;
 
-@TargetApi(16)
 public final class ExoPlayerView extends FrameLayout {
     private static final String TAG = ExoPlayerView.class.getSimpleName();
 
