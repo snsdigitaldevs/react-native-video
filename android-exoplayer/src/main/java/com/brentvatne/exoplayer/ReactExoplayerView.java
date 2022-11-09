@@ -149,7 +149,7 @@ class ReactExoplayerView extends FrameLayout implements
             if (msg.what == SHOW_PROGRESS) {
                 if (player != null
                         && player.getPlaybackState() == Player.STATE_READY
-                        && player.getPlayWhenReady()
+                        && player.getPlayWhenReady() && player.getDuration() != C.TIME_UNSET && player.getDuration() > 0
                 ) {
                     long pos = player.getCurrentPosition();
                     long bufferedDuration = player.getBufferedPercentage() * player.getDuration() / 100;
@@ -368,14 +368,16 @@ class ReactExoplayerView extends FrameLayout implements
                 playerNeedsSource = true;
                 PlaybackParameters params = new PlaybackParameters(rate, 1f);
                 player.setPlaybackParameters(params);
-                ConcatenatingMediaSource mediaSource = PlayerInstanceHolder.INSTANCE.getMediaSourceList();
-                Log.i(TAG, "ConcatenatingMediaSource size:" + mediaSource.getSize());
-                player.prepare(mediaSource);
             }
 
             if (playerNeedsSource && srcUri != null) {
                 resumeWindow = PlayerInstanceHolder.INSTANCE.mapToCurrentWindowIndex(srcUri);
-                boolean haveResumePosition = resumeWindow != C.INDEX_UNSET;
+                boolean haveResumePosition = (resumeWindow != C.INDEX_UNSET);
+                if (resumeWindow < 0) {
+                    player.prepare(buildMediaSource(srcUri, extension));
+                } else if (resumeWindow >= player.getCurrentTimeline().getWindowCount()) {
+                    player.prepare(PlayerInstanceHolder.INSTANCE.getMediaSourceList(), false, false);
+                }
                 Log.i(TAG, "reload resource: resumeWindow" + resumeWindow);
                 if (haveResumePosition) {
                     player.seekTo(resumeWindow, resumePosition);
