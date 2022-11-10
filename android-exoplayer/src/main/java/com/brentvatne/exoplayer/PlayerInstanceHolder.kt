@@ -8,6 +8,7 @@ import android.util.Log
 import com.facebook.react.bridge.ReactContext
 import com.google.android.exoplayer2.*
 import com.google.android.exoplayer2.audio.AudioAttributes
+import com.google.android.exoplayer2.audio.AudioListener
 import com.google.android.exoplayer2.extractor.DefaultExtractorsFactory
 import com.google.android.exoplayer2.source.ConcatenatingMediaSource
 import com.google.android.exoplayer2.source.ExtractorMediaSource
@@ -89,8 +90,6 @@ object PlayerInstanceHolder {
                 mediaItem.description.mediaUri
             )
         }
-        simpleExoPlayer?.prepare(mediaSourceList)
-
     }
 
     private fun buildMediaSource(mediaDataSourceFactory: DataSource.Factory, uri: Uri?) =
