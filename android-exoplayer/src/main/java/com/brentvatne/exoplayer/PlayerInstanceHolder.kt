@@ -8,7 +8,6 @@ import android.util.Log
 import com.facebook.react.bridge.ReactContext
 import com.google.android.exoplayer2.*
 import com.google.android.exoplayer2.audio.AudioAttributes
-import com.google.android.exoplayer2.audio.AudioListener
 import com.google.android.exoplayer2.extractor.DefaultExtractorsFactory
 import com.google.android.exoplayer2.source.ConcatenatingMediaSource
 import com.google.android.exoplayer2.source.ExtractorMediaSource
@@ -30,12 +29,20 @@ object PlayerInstanceHolder {
     private var currentMediaItemsList: MutableList<MediaItem>? = null
     val bandwidthMeter = DefaultBandwidthMeter()
     private var mutableMediaSourceList: List<MediaSource>? = null
+    private var mutableIsSwitchedToOtherSource = false
+    private var mutableResumePosition: Long = C.TIME_UNSET
 
     val trackSelector: DefaultTrackSelector?
         get() = mutableTrackSelector
 
     val mediaSourceList: ConcatenatingMediaSource
         get() = ConcatenatingMediaSource(*mutableMediaSourceList?.toTypedArray() ?: emptyArray())
+
+    val isSwitchOtherSource: Boolean
+        get() = mutableIsSwitchedToOtherSource
+
+    val resumePosition: Long
+        get() = mutableResumePosition
 
     fun getPlayer(context: Context): SimpleExoPlayer {
         if (simpleExoPlayer == null) {
@@ -78,7 +85,13 @@ object PlayerInstanceHolder {
             indexOf(
                 find { it.description.mediaUri.toString() == uri.toString() }
             )
-        } ?: -1
+        } ?: C.INDEX_UNSET
+    }
+
+    fun switchToOtherResource(isSwitched: Boolean) {
+        mutableIsSwitchedToOtherSource = isSwitched
+        mutableResumePosition =
+            if (isSwitched) simpleExoPlayer?.currentPosition ?: C.TIME_UNSET else C.TIME_UNSET
     }
 
     fun convertToExoplayerDataSource(context: ReactContext) {

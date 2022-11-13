@@ -5,6 +5,7 @@ import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
 import android.net.Uri;
+import android.nfc.Tag;
 import android.os.Handler;
 import android.os.Message;
 import android.support.v4.media.session.PlaybackStateCompat;
@@ -33,19 +34,19 @@ import com.facebook.react.uimanager.ThemedReactContext;
 import com.google.android.exoplayer2.C;
 import com.google.android.exoplayer2.ExoPlaybackException;
 import com.google.android.exoplayer2.ExoPlayer;
+import com.google.android.exoplayer2.ExoPlayerFactory;
 import com.google.android.exoplayer2.Format;
 import com.google.android.exoplayer2.PlaybackParameters;
 import com.google.android.exoplayer2.Player;
 import com.google.android.exoplayer2.SimpleExoPlayer;
 import com.google.android.exoplayer2.Timeline;
-import com.google.android.exoplayer2.analytics.AnalyticsListener;
+import com.google.android.exoplayer2.audio.AudioAttributes;
 import com.google.android.exoplayer2.extractor.DefaultExtractorsFactory;
 import com.google.android.exoplayer2.mediacodec.MediaCodecRenderer;
 import com.google.android.exoplayer2.mediacodec.MediaCodecUtil;
 import com.google.android.exoplayer2.metadata.Metadata;
 import com.google.android.exoplayer2.metadata.MetadataOutput;
 import com.google.android.exoplayer2.source.BehindLiveWindowException;
-import com.google.android.exoplayer2.source.ConcatenatingMediaSource;
 import com.google.android.exoplayer2.source.ExtractorMediaSource;
 import com.google.android.exoplayer2.source.MediaSource;
 import com.google.android.exoplayer2.source.TrackGroup;
@@ -61,14 +62,12 @@ import com.google.android.exoplayer2.trackselection.TrackSelectionArray;
 import com.google.android.exoplayer2.ui.PlayerControlView;
 import com.google.android.exoplayer2.upstream.BandwidthMeter;
 import com.google.android.exoplayer2.upstream.DataSource;
-import com.google.android.exoplayer2.upstream.DefaultBandwidthMeter;
 import com.google.android.exoplayer2.upstream.DefaultLoadErrorHandlingPolicy;
 import com.google.android.exoplayer2.util.Util;
 
 import java.net.CookieHandler;
 import java.net.CookieManager;
 import java.net.CookiePolicy;
-import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 
@@ -146,6 +145,7 @@ class ReactExoplayerView extends FrameLayout implements
     private final Handler progressHandler = new Handler(new Handler.Callback() {
         @Override
         public boolean handleMessage(@NonNull Message msg) {
+            if (PlayerInstanceHolder.INSTANCE.isSwitchOtherSource()) return false;
             if (msg.what == SHOW_PROGRESS) {
                 if (player != null
                         && player.getPlaybackState() == Player.STATE_READY
@@ -230,12 +230,6 @@ class ReactExoplayerView extends FrameLayout implements
         exoPlayerView.setLayoutParams(layoutParams);
 
         addView(exoPlayerView, 0, layoutParams);
-    }
-
-    @Override
-    protected void onAttachedToWindow() {
-        super.onAttachedToWindow();
-        initializePlayer();
     }
 
     // LifecycleEventListener implementation
@@ -357,8 +351,8 @@ class ReactExoplayerView extends FrameLayout implements
         // This ensures all props have been setted, to avoid async racing conditions.
         new Handler().postDelayed(() -> {
             if (player == null) {
-                trackSelector = PlayerInstanceHolder.INSTANCE.getTrackSelector();
                 player = PlayerInstanceHolder.INSTANCE.getPlayer(getContext());
+                trackSelector = PlayerInstanceHolder.INSTANCE.getTrackSelector();
                 player.addListener(self);
                 player.addMetadataOutput(self);
                 exoPlayerView.setPlayer(player);
@@ -371,16 +365,26 @@ class ReactExoplayerView extends FrameLayout implements
             }
 
             if (playerNeedsSource && srcUri != null) {
-                resumeWindow = PlayerInstanceHolder.INSTANCE.mapToCurrentWindowIndex(srcUri);
-                boolean haveResumePosition = (resumeWindow != C.INDEX_UNSET);
-                if (resumeWindow < 0) {
-                    player.prepare(buildMediaSource(srcUri, extension));
-                } else if (resumeWindow >= player.getCurrentTimeline().getWindowCount()) {
-                    player.prepare(PlayerInstanceHolder.INSTANCE.getMediaSourceList(), false, false);
+                if (PlayerInstanceHolder.INSTANCE.getMediaSourceList().getSize() <= 0) {
+                    PlayerInstanceHolder.INSTANCE.convertToExoplayerDataSource(themedReactContext);
                 }
+                Log.i(TAG, "source list size:" + PlayerInstanceHolder.INSTANCE.getMediaSourceList().getSize());
+                resumeWindow = PlayerInstanceHolder.INSTANCE.mapToCurrentWindowIndex(srcUri);
                 Log.i(TAG, "reload resource: resumeWindow" + resumeWindow);
-                if (haveResumePosition) {
+                if (resumeWindow < 0) {
+                    PlayerInstanceHolder.INSTANCE.switchToOtherResource(true);
+                    player.prepare(buildMediaSource(srcUri, ""));
+                    Log.i(TAG, "start another player");
+                } else {
+
+                    if (PlayerInstanceHolder.INSTANCE.isSwitchOtherSource() ||
+                            (player.getCurrentTimeline() != null && player.getCurrentTimeline().getWindowCount() > resumeWindow)) {
+                        player.prepare(PlayerInstanceHolder.INSTANCE.getMediaSourceList());
+                        resumePosition = PlayerInstanceHolder.INSTANCE.getResumePosition();
+                    }
+
                     player.seekTo(resumeWindow, resumePosition);
+                    PlayerInstanceHolder.INSTANCE.switchToOtherResource(false);
                 }
 
                 playerNeedsSource = false;
@@ -424,8 +428,8 @@ class ReactExoplayerView extends FrameLayout implements
     private void releasePlayer() {
         if (player != null) {
             updateResumePosition();
-            PlayerInstanceHolder.INSTANCE.stopPlayer(true);
         }
+
         progressHandler.removeMessages(SHOW_PROGRESS);
         themedReactContext.removeLifecycleEventListener(this);
         audioBecomingNoisyReceiver.removeListener();
