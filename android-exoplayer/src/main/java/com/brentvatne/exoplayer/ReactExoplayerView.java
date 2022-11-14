@@ -378,7 +378,7 @@ class ReactExoplayerView extends FrameLayout implements
                 } else {
 
                     if (PlayerInstanceHolder.INSTANCE.isSwitchOtherSource() ||
-                            (player.getCurrentTimeline() != null && player.getCurrentTimeline().getWindowCount() > resumeWindow)) {
+                            player.getCurrentTimeline() == null || player.getCurrentTimeline().getWindowCount() <= resumeWindow) {
                         player.prepare(PlayerInstanceHolder.INSTANCE.getMediaSourceList());
                         resumePosition = PlayerInstanceHolder.INSTANCE.getResumePosition();
                     }
