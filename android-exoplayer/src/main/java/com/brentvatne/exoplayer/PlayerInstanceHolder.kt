@@ -4,16 +4,15 @@ import android.content.Context
 import android.net.Uri
 import android.support.v4.media.MediaBrowserCompat
 import android.support.v4.media.MediaBrowserCompat.MediaItem
-import android.util.Log
 import com.facebook.react.bridge.ReactContext
 import com.google.android.exoplayer2.*
 import com.google.android.exoplayer2.audio.AudioAttributes
-import com.google.android.exoplayer2.extractor.DefaultExtractorsFactory
 import com.google.android.exoplayer2.source.ConcatenatingMediaSource
-import com.google.android.exoplayer2.source.ExtractorMediaSource
 import com.google.android.exoplayer2.source.MediaSource
+import com.google.android.exoplayer2.source.ProgressiveMediaSource
 import com.google.android.exoplayer2.trackselection.AdaptiveTrackSelection
 import com.google.android.exoplayer2.trackselection.DefaultTrackSelector
+import com.google.android.exoplayer2.upstream.BandwidthMeter
 import com.google.android.exoplayer2.upstream.DataSource
 import com.google.android.exoplayer2.upstream.DefaultBandwidthMeter
 
@@ -27,13 +26,16 @@ object PlayerInstanceHolder {
     private var simpleExoPlayer: SimpleExoPlayer? = null
     private var mutableTrackSelector: DefaultTrackSelector? = null
     private var currentMediaItemsList: MutableList<MediaItem>? = null
-    val bandwidthMeter = DefaultBandwidthMeter()
+    private var mutableBandwidthMeter: BandwidthMeter? = null
     private var mutableMediaSourceList: List<MediaSource>? = null
     private var mutableIsSwitchedToOtherSource = false
     private var mutableResumePosition: Long = C.TIME_UNSET
 
     val trackSelector: DefaultTrackSelector?
         get() = mutableTrackSelector
+
+    val bandwidthMeter: DefaultBandwidthMeter?
+        get() = mutableBandwidthMeter as DefaultBandwidthMeter?
 
     val mediaSourceList: ConcatenatingMediaSource
         get() = ConcatenatingMediaSource(*mutableMediaSourceList?.toTypedArray() ?: emptyArray())
@@ -46,23 +48,21 @@ object PlayerInstanceHolder {
 
     fun getPlayer(context: Context): SimpleExoPlayer {
         if (simpleExoPlayer == null) {
-            mutableTrackSelector = DefaultTrackSelector(AdaptiveTrackSelection.Factory()).apply {
-                setParameters(buildUponParameters().setMaxVideoBitrate(Int.MAX_VALUE))
-            }
+            mutableTrackSelector =
+                DefaultTrackSelector(context, AdaptiveTrackSelection.Factory()).apply {
+                    setParameters(buildUponParameters().setMaxVideoBitrate(Int.MAX_VALUE))
+                }
 
-            simpleExoPlayer =
-                ExoPlayerFactory.newSimpleInstance(
-                    context,
-                    DefaultRenderersFactory(context),
-                    mutableTrackSelector,
-                    DefaultLoadControl(),
-                    null,
-                    bandwidthMeter
-                ).apply {
+            mutableBandwidthMeter = DefaultBandwidthMeter.Builder(context).build()
+
+            simpleExoPlayer = SimpleExoPlayer.Builder(context)
+                .setBandwidthMeter(mutableBandwidthMeter!!)
+                .setTrackSelector(mutableTrackSelector!!)
+                .build()
+                .apply {
                     setAudioAttributes(playerAudioAttributes, true)
                 }
         }
-
         return simpleExoPlayer!!
     }
 
@@ -106,8 +106,7 @@ object PlayerInstanceHolder {
     }
 
     private fun buildMediaSource(mediaDataSourceFactory: DataSource.Factory, uri: Uri?) =
-        ExtractorMediaSource.Factory(mediaDataSourceFactory)
-            .setExtractorsFactory(DefaultExtractorsFactory())
+        ProgressiveMediaSource.Factory(mediaDataSourceFactory)
             .createMediaSource(uri)
 
     fun releasePlayer() {
