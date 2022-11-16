@@ -87,10 +87,14 @@ import com.google.android.exoplayer2.util.Log;
             return;
         }
 
-        if (enabled && stayAwake) {
-            wifiLock.acquire();
-        } else {
-            wifiLock.release();
+        try {
+            if (enabled && stayAwake) {
+                wifiLock.acquire();
+            } else {
+                wifiLock.release();
+            }
+        } catch (UnsupportedOperationException exception) {
+            if (wifiLock != null) wifiLock.release();
         }
     }
 }
