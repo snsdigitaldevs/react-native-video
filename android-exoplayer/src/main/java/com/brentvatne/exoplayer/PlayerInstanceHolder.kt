@@ -46,6 +46,9 @@ object PlayerInstanceHolder {
     val resumePosition: Long
         get() = mutableResumePosition
 
+    val repeatMode: Int
+        get() = simpleExoPlayer?.repeatMode ?: Player.REPEAT_MODE_OFF
+
     fun getPlayer(context: Context): SimpleExoPlayer {
         if (simpleExoPlayer == null) {
             mutableTrackSelector =

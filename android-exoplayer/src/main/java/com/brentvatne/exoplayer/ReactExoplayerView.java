@@ -133,10 +133,13 @@ class ReactExoplayerView extends FrameLayout implements
     private final WakeLockManager wakeLockManager;
     private final WifiLockManager wifiLockManager;
 
+    private static final String PLAYER_TYPE_SPEAK_EASY = "SpeakEasy";
+    public static final String PLAYER_TYPE_PAGE_READING = "PageReading";
+
     private final Handler progressHandler = new Handler(new Handler.Callback() {
         @Override
         public boolean handleMessage(@NonNull Message msg) {
-            if (PlayerInstanceHolder.INSTANCE.isSwitchOtherSource()) return false;
+            if (PlayerInstanceHolder.INSTANCE.isSwitchOtherSource() && !isPlaySentence()) return false;
             if (msg.what == SHOW_PROGRESS) {
                 if (player != null
                         && player.getPlaybackState() == Player.STATE_READY
@@ -363,13 +366,14 @@ class ReactExoplayerView extends FrameLayout implements
                 }
                 Log.i(TAG, "source list size:" + PlayerInstanceHolder.INSTANCE.getMediaSourceList().getSize());
                 resumeWindow = PlayerInstanceHolder.INSTANCE.mapToCurrentWindowIndex(srcUri);
-                Log.i(TAG, "reload resource: resumeWindow" + resumeWindow);
-                if (resumeWindow < 0) {
+                Log.i(TAG, "reload resource: resumeWindow" + resumeWindow + "extension:" + extension);
+
+                if (resumeWindow < 0 || isPlaySentence()) {
                     PlayerInstanceHolder.INSTANCE.switchToOtherResource(true);
+                    player.setRepeatMode(Player.REPEAT_MODE_OFF);
                     player.prepare(buildMediaSource(srcUri, ""));
                     Log.i(TAG, "start another player");
-                } else {
-
+                }  else {
                     if (PlayerInstanceHolder.INSTANCE.isSwitchOtherSource() || player.getCurrentTimeline().getWindowCount() <= resumeWindow) {
                         player.prepare(PlayerInstanceHolder.INSTANCE.getMediaSourceList());
                         resumePosition = PlayerInstanceHolder.INSTANCE.getResumePosition();
@@ -475,6 +479,7 @@ class ReactExoplayerView extends FrameLayout implements
     protected void onDetachedFromWindow() {
         super.onDetachedFromWindow();
         stopPlayback();
+        if (isPlaySentence()) setPausedModifier(true);
     }
 
     private void stopPlayback() {
@@ -824,6 +829,10 @@ class ReactExoplayerView extends FrameLayout implements
         setMutedModifier(muted);
     }
 
+    private boolean isPlaySentence() {
+        return PLAYER_TYPE_SPEAK_EASY.equals(extension) || PLAYER_TYPE_PAGE_READING.equals(extension);
+    }
+
     public void setRepeatModifier(boolean repeat) {
         if (player != null) {
             if (repeat) {
@@ -996,6 +1005,7 @@ class ReactExoplayerView extends FrameLayout implements
     }
 
     public void seekTo(long positionMs) {
+        if (PLAYER_TYPE_SPEAK_EASY.equals(extension)) setPlayWhenReady(true);
         if (player != null) {
             seekTime = positionMs;
             player.seekTo(positionMs);
