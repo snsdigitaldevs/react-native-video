@@ -376,9 +376,11 @@ class ReactExoplayerView extends FrameLayout implements
                 }  else {
                     if (PlayerInstanceHolder.INSTANCE.isSwitchOtherSource() || player.getCurrentTimeline().getWindowCount() <= resumeWindow) {
                         player.prepare(PlayerInstanceHolder.INSTANCE.getMediaSourceList());
-                        resumePosition = PlayerInstanceHolder.INSTANCE.getResumePosition();
+                        Log.i(TAG, "switch back resource");
                     }
 
+                    resumePosition = PlayerInstanceHolder.INSTANCE.getResumePosition();
+                    Log.i(TAG, "play lesson list resumePosition:" + resumePosition + "isSwitchOtherSource" + PlayerInstanceHolder.INSTANCE.isSwitchOtherSource() );
                     player.seekTo(resumeWindow, resumePosition);
                     PlayerInstanceHolder.INSTANCE.switchToOtherResource(false);
                 }
@@ -479,7 +481,7 @@ class ReactExoplayerView extends FrameLayout implements
     protected void onDetachedFromWindow() {
         super.onDetachedFromWindow();
         stopPlayback();
-        if (isPlaySentence()) setPausedModifier(true);
+        if (isPlaySentence()) pausePlayback();
     }
 
     private void stopPlayback() {
@@ -983,6 +985,7 @@ class ReactExoplayerView extends FrameLayout implements
             if (!paused) {
                 startPlayback();
             } else {
+                PlayerInstanceHolder.INSTANCE.saveResumePosition();
                 pausePlayback();
             }
         }

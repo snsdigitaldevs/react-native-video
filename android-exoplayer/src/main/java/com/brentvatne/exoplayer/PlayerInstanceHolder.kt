@@ -101,6 +101,10 @@ object PlayerInstanceHolder {
             if (isSwitched) simpleExoPlayer?.currentPosition ?: C.TIME_UNSET else C.TIME_UNSET
     }
 
+    fun saveResumePosition() {
+        mutableResumePosition = simpleExoPlayer?.currentPosition?: C.TIME_UNSET
+    }
+
     fun convertToExoplayerDataSource(context: ReactContext) {
         val mediaDataSourceFactory =
             DataSourceUtil.getDefaultDataSourceFactory(context, bandwidthMeter, null)
