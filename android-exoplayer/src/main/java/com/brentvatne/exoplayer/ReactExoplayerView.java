@@ -191,12 +191,18 @@ class ReactExoplayerView extends FrameLayout implements
         this.wifiLockManager.setEnabled(true);
 
         createViews();
-
-        Log.w(TAG, "Create ReactExoplayerView");
         themedReactContext.addLifecycleEventListener(this);
         audioBecomingNoisyReceiver = new AudioBecomingNoisyReceiver(themedReactContext);
+
+    }
+
+    @Override
+    protected void onAttachedToWindow() {
+        super.onAttachedToWindow();
+        Log.w(TAG, "Create ReactExoplayerView onAttachedToWindow");
         initializePlayer();
     }
+
 
     @NonNull
     @Override
