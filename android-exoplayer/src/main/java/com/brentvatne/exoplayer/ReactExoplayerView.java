@@ -32,13 +32,11 @@ import com.google.android.exoplayer2.Format;
 import com.google.android.exoplayer2.PlaybackParameters;
 import com.google.android.exoplayer2.Player;
 import com.google.android.exoplayer2.SimpleExoPlayer;
-import com.google.android.exoplayer2.extractor.DefaultExtractorsFactory;
 import com.google.android.exoplayer2.mediacodec.MediaCodecRenderer;
 import com.google.android.exoplayer2.mediacodec.MediaCodecUtil;
 import com.google.android.exoplayer2.metadata.Metadata;
 import com.google.android.exoplayer2.metadata.MetadataOutput;
 import com.google.android.exoplayer2.source.BehindLiveWindowException;
-import com.google.android.exoplayer2.source.ExtractorMediaSource;
 import com.google.android.exoplayer2.source.MediaSource;
 import com.google.android.exoplayer2.source.ProgressiveMediaSource;
 import com.google.android.exoplayer2.source.TrackGroup;
@@ -139,7 +137,7 @@ class ReactExoplayerView extends FrameLayout implements
     private final Handler progressHandler = new Handler(new Handler.Callback() {
         @Override
         public boolean handleMessage(@NonNull Message msg) {
-            if (PlayerInstanceHolder.INSTANCE.isSwitchOtherSource() && !isPlaySentence()) return false;
+            if (PlayerInstanceHolder.INSTANCE.isSwitchOtherSource() && !isPlayOtherSource()) return false;
             if (msg.what == SHOW_PROGRESS) {
                 if (player != null
                         && player.getPlaybackState() == Player.STATE_READY
@@ -374,7 +372,7 @@ class ReactExoplayerView extends FrameLayout implements
                 resumeWindow = PlayerInstanceHolder.INSTANCE.mapToCurrentWindowIndex(srcUri);
                 Log.i(TAG, "reload resource: resumeWindow" + resumeWindow + "extension:" + extension);
 
-                if (resumeWindow < 0 || isPlaySentence()) {
+                if (resumeWindow < 0 || isPlayOtherSource()) {
                     PlayerInstanceHolder.INSTANCE.switchToOtherResource(true);
                     player.setRepeatMode(Player.REPEAT_MODE_OFF);
                     player.prepare(buildMediaSource(srcUri, ""));
@@ -383,9 +381,9 @@ class ReactExoplayerView extends FrameLayout implements
                     if (PlayerInstanceHolder.INSTANCE.isSwitchOtherSource() || player.getCurrentTimeline().getWindowCount() <= resumeWindow) {
                         player.prepare(PlayerInstanceHolder.INSTANCE.getMediaSourceList());
                         Log.i(TAG, "switch back resource");
+                        resumePosition = PlayerInstanceHolder.INSTANCE.getResumePosition();
                     }
 
-                    resumePosition = PlayerInstanceHolder.INSTANCE.getResumePosition();
                     Log.i(TAG, "play lesson list resumePosition:" + resumePosition + "isSwitchOtherSource" + PlayerInstanceHolder.INSTANCE.isSwitchOtherSource() );
                     player.seekTo(resumeWindow, resumePosition);
                     PlayerInstanceHolder.INSTANCE.switchToOtherResource(false);
@@ -487,7 +485,7 @@ class ReactExoplayerView extends FrameLayout implements
     protected void onDetachedFromWindow() {
         super.onDetachedFromWindow();
         stopPlayback();
-        if (isPlaySentence()) pausePlayback();
+        if (isPlayOtherSource()) pausePlayback();
     }
 
     private void stopPlayback() {
@@ -837,7 +835,7 @@ class ReactExoplayerView extends FrameLayout implements
         setMutedModifier(muted);
     }
 
-    private boolean isPlaySentence() {
+    private boolean isPlayOtherSource() {
         return PLAYER_TYPE_SPEAK_EASY.equals(extension) || PLAYER_TYPE_PAGE_READING.equals(extension);
     }
 
@@ -991,7 +989,6 @@ class ReactExoplayerView extends FrameLayout implements
             if (!paused) {
                 startPlayback();
             } else {
-                PlayerInstanceHolder.INSTANCE.saveResumePosition();
                 pausePlayback();
             }
         }
@@ -1018,6 +1015,8 @@ class ReactExoplayerView extends FrameLayout implements
         if (player != null) {
             seekTime = positionMs;
             player.seekTo(positionMs);
+        } else {
+            resumePosition = positionMs;
         }
     }
 
