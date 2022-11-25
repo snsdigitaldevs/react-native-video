@@ -138,6 +138,7 @@ class ReactExoplayerView extends FrameLayout implements
         @Override
         public boolean handleMessage(@NonNull Message msg) {
             if (PlayerInstanceHolder.INSTANCE.isSwitchOtherSource() && !isPlayOtherSource()) return false;
+            if (loadVideoStarted) return false; // Make sure onProgress is called after onLoad
             if (msg.what == SHOW_PROGRESS) {
                 if (player != null
                         && player.getPlaybackState() == Player.STATE_READY
@@ -371,17 +372,20 @@ class ReactExoplayerView extends FrameLayout implements
                 Log.i(TAG, "source list size:" + PlayerInstanceHolder.INSTANCE.getMediaSourceList().getSize());
                 resumeWindow = PlayerInstanceHolder.INSTANCE.mapToCurrentWindowIndex(srcUri);
                 Log.i(TAG, "reload resource: resumeWindow" + resumeWindow + "extension:" + extension);
+                boolean isRePrepareSource = false;
 
                 if (resumeWindow < 0 || isPlayOtherSource()) {
                     PlayerInstanceHolder.INSTANCE.switchToOtherResource(true);
                     player.setRepeatMode(Player.REPEAT_MODE_OFF);
                     player.prepare(buildMediaSource(srcUri, ""));
+                    isRePrepareSource = true;
                     Log.i(TAG, "start another player");
                 }  else {
                     if (PlayerInstanceHolder.INSTANCE.isSwitchOtherSource() || player.getCurrentTimeline().getWindowCount() <= resumeWindow) {
-                        player.prepare(PlayerInstanceHolder.INSTANCE.getMediaSourceList());
                         Log.i(TAG, "switch back resource");
+                        player.prepare(PlayerInstanceHolder.INSTANCE.getMediaSourceList());
                         resumePosition = PlayerInstanceHolder.INSTANCE.getResumePosition();
+                        isRePrepareSource = true;
                     }
 
                     Log.i(TAG, "play lesson list resumePosition:" + resumePosition + "isSwitchOtherSource" + PlayerInstanceHolder.INSTANCE.isSwitchOtherSource() );
@@ -392,6 +396,7 @@ class ReactExoplayerView extends FrameLayout implements
                 playerNeedsSource = false;
                 eventEmitter.loadStart();
                 loadVideoStarted = true;
+                if (!isRePrepareSource) { this.onPlayerStateChanged(player.getPlayWhenReady(), player.getPlaybackState());}
             }
 
             // Initializing the playerControlView
