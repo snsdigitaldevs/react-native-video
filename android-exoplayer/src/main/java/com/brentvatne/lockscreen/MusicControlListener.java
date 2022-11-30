@@ -9,10 +9,12 @@ import android.support.v4.media.session.MediaSessionCompat;
 import android.util.Log;
 import android.view.KeyEvent;
 
+import com.brentvatne.exoplayer.PlayerInstanceHolder;
 import com.facebook.react.bridge.Arguments;
 import com.facebook.react.bridge.ReactApplicationContext;
 import com.facebook.react.bridge.WritableMap;
 import com.facebook.react.modules.core.DeviceEventManagerModule;
+import com.google.android.exoplayer2.C;
 
 import java.util.Iterator;
 import java.util.Set;
@@ -112,7 +114,11 @@ public class MusicControlListener extends MediaSessionCompat.Callback {
 
     @Override
     public void onSeekTo(long pos) {
-        sendEvent(context, "seek", pos / 100D);
+        long currentMediaDuration = PlayerInstanceHolder.INSTANCE.getCurrentMediaDuration();
+        if (currentMediaDuration != C.TIME_UNSET) {
+            Log.i(TAG, "onSeekTo: " + pos / 1000 / 60 + "m" + pos / 1000 % 60 + "s");
+            sendEvent(context, "seek", pos * 1D / currentMediaDuration);
+        }
     }
 
     @Override

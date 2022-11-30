@@ -2,14 +2,10 @@ package com.brentvatne.exoplayer
 
 import android.content.Context
 import android.net.Uri
-import android.os.Handler
 import android.support.v4.media.MediaBrowserCompat
 import android.support.v4.media.MediaBrowserCompat.MediaItem
-import android.util.Log
 import com.facebook.react.bridge.ReactContext
 import com.google.android.exoplayer2.*
-import com.google.android.exoplayer2.C.AudioFocusGain
-import com.google.android.exoplayer2.analytics.AnalyticsListener
 import com.google.android.exoplayer2.audio.AudioAttributes
 import com.google.android.exoplayer2.source.ConcatenatingMediaSource
 import com.google.android.exoplayer2.source.MediaSource
@@ -52,6 +48,9 @@ object PlayerInstanceHolder {
 
     val repeatMode: Int
         get() = simpleExoPlayer?.repeatMode ?: Player.REPEAT_MODE_OFF
+
+    val currentMediaDuration: Long
+        get() = simpleExoPlayer?.duration ?: C.TIME_UNSET
 
     fun getPlayer(context: Context): SimpleExoPlayer {
         if (simpleExoPlayer == null) {
@@ -102,7 +101,7 @@ object PlayerInstanceHolder {
     }
 
     fun saveResumePosition() {
-        mutableResumePosition = simpleExoPlayer?.currentPosition?: C.TIME_UNSET
+        mutableResumePosition = simpleExoPlayer?.currentPosition ?: C.TIME_UNSET
     }
 
     fun convertToExoplayerDataSource(context: ReactContext) {
