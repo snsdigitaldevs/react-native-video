@@ -57,6 +57,7 @@ import com.google.android.exoplayer2.util.Util;
 import java.net.CookieHandler;
 import java.net.CookieManager;
 import java.net.CookiePolicy;
+import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 
@@ -379,10 +380,12 @@ class ReactExoplayerView extends FrameLayout implements
                     player.setRepeatMode(Player.REPEAT_MODE_OFF);
                     player.prepare(buildMediaSource(srcUri, ""));
                     isRePrepareSource = true;
-                    Log.i(TAG, "start another player");
                 }  else {
-                    if (PlayerInstanceHolder.INSTANCE.isSwitchOtherSource() || player.getCurrentTimeline().getWindowCount() <= resumeWindow) {
-                        Log.i(TAG, "switch back resource");
+                    if (PlayerInstanceHolder.INSTANCE.isSwitchOtherSource() ||
+                            player.getCurrentTimeline().getWindowCount() <= resumeWindow ||
+                            player.getPlaybackState() == Player.STATE_IDLE
+                    ) {
+                        player.stop(true);
                         player.prepare(PlayerInstanceHolder.INSTANCE.getMediaSourceList());
                         resumePosition = PlayerInstanceHolder.INSTANCE.getResumePosition();
                         isRePrepareSource = true;
@@ -784,7 +787,7 @@ class ReactExoplayerView extends FrameLayout implements
 
     public void setSrc(final Uri uri, final String extension, Map<String, String> headers) {
         if (uri != null) {
-            boolean isOriginalSourceNull = srcUri == null;
+            PlayerInstanceHolder.INSTANCE.updateMediaItemToLocalUrl(uri);
             boolean isSourceEqual = uri.equals(srcUri);
 
             this.srcUri = uri;
@@ -792,7 +795,7 @@ class ReactExoplayerView extends FrameLayout implements
             this.requestHeaders = headers;
             this.mediaDataSourceFactory = DataSourceUtil.getDefaultDataSourceFactory(this.themedReactContext, PlayerInstanceHolder.INSTANCE.getBandwidthMeter(), this.requestHeaders);
 
-            if (!isOriginalSourceNull && !isSourceEqual) {
+            if (srcUri != null && !isSourceEqual) {
                 reloadSource();
             }
         }
