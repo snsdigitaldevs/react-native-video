@@ -143,7 +143,7 @@ class ReactExoplayerView extends FrameLayout implements
             if (msg.what == SHOW_PROGRESS) {
                 if (player != null
                         && player.getPlaybackState() == Player.STATE_READY
-                        && player.getPlayWhenReady() && player.getDuration() != C.TIME_UNSET && player.getDuration() > 0
+                        && player.getPlayWhenReady() && player.getDuration() > 0
                 ) {
                     long pos = player.getCurrentPosition();
                     long bufferedDuration = player.getBufferedPercentage() * player.getDuration() / 100;
@@ -386,6 +386,7 @@ class ReactExoplayerView extends FrameLayout implements
                             player.getPlaybackState() == Player.STATE_IDLE
                     ) {
                         player.stop(true);
+                        PlayerInstanceHolder.INSTANCE.convertToExoplayerDataSource(themedReactContext);
                         player.prepare(PlayerInstanceHolder.INSTANCE.getMediaSourceList());
                         resumePosition = PlayerInstanceHolder.INSTANCE.getResumePosition();
                         isRePrepareSource = true;

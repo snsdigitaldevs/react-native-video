@@ -19,6 +19,7 @@ import com.google.android.exoplayer2.upstream.DataSource
 import com.google.android.exoplayer2.upstream.DefaultBandwidthMeter
 import java.io.File
 
+const val DESCRIPTION_EXTRAS_KEY_ALTERNATIVE_AUDIO_LINK = "description_alternative_audio_link"
 object PlayerInstanceHolder {
 
     private val playerAudioAttributes = AudioAttributes.Builder()
@@ -139,7 +140,10 @@ object PlayerInstanceHolder {
     fun mapToCurrentWindowIndex(uri: Uri): Int {
         return currentMediaItemsList?.run {
             indexOf(
-                find { it.description.mediaUri.toString() == uri.toString() }
+                find {
+                    it.description.mediaUri.toString() == uri.toString() ||
+                    it.description.alternativeAudioLink == uri.toString()
+                }
             )
         } ?: C.INDEX_UNSET
     }
