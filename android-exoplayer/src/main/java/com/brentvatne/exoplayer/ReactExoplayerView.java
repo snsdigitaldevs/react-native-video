@@ -788,7 +788,10 @@ class ReactExoplayerView extends FrameLayout implements
 
     public void setSrc(final Uri uri, final String extension, Map<String, String> headers) {
         if (uri != null) {
-            PlayerInstanceHolder.INSTANCE.updateMediaItemToLocalUrl(uri);
+            if ( PlayerInstanceHolder.INSTANCE.updateMediaItemToLocalUrl(uri)) {
+                PlayerInstanceHolder.INSTANCE.convertToExoplayerDataSource(themedReactContext);
+                if (player != null) player.prepare(PlayerInstanceHolder.INSTANCE.getMediaSourceList());
+            }
             boolean isSourceEqual = uri.equals(srcUri);
 
             this.srcUri = uri;
@@ -1020,9 +1023,8 @@ class ReactExoplayerView extends FrameLayout implements
     }
 
     public void seekTo(long positionMs) {
-        if ( PlayerInstanceHolder.INSTANCE.mapToCurrentWindowIndex(srcUri) != player.getCurrentWindowIndex()) return;
         if (PLAYER_TYPE_SPEAK_EASY.equals(extension)) setPlayWhenReady(true);
-        if (player != null) {
+        if (player != null && PlayerInstanceHolder.INSTANCE.mapToCurrentWindowIndex(srcUri) == player.getCurrentWindowIndex()) {
             seekTime = positionMs;
             player.seekTo(positionMs);
         } else {
