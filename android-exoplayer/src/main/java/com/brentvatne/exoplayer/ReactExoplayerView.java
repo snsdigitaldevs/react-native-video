@@ -1020,6 +1020,7 @@ class ReactExoplayerView extends FrameLayout implements
     }
 
     public void seekTo(long positionMs) {
+        if ( PlayerInstanceHolder.INSTANCE.mapToCurrentWindowIndex(srcUri) != player.getCurrentWindowIndex()) return;
         if (PLAYER_TYPE_SPEAK_EASY.equals(extension)) setPlayWhenReady(true);
         if (player != null) {
             seekTime = positionMs;
