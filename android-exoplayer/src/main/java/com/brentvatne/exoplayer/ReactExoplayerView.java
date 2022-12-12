@@ -133,7 +133,6 @@ class ReactExoplayerView extends FrameLayout implements
     private final WifiLockManager wifiLockManager;
 
     private static final String PLAYER_TYPE_SPEAK_EASY = "SpeakEasy";
-    public static final String PLAYER_TYPE_PAGE_READING = "PageReading";
 
     private final Handler progressHandler = new Handler(new Handler.Callback() {
         @Override
@@ -493,6 +492,7 @@ class ReactExoplayerView extends FrameLayout implements
     @Override
     protected void onDetachedFromWindow() {
         super.onDetachedFromWindow();
+        Log.i(TAG, "onDetachedFromWindow");
         stopPlayback();
         if (isPlayOtherSource()) pausePlayback();
     }
@@ -848,7 +848,7 @@ class ReactExoplayerView extends FrameLayout implements
     }
 
     private boolean isPlayOtherSource() {
-        return PLAYER_TYPE_SPEAK_EASY.equals(extension) || PLAYER_TYPE_PAGE_READING.equals(extension);
+        return (extension!= null && !extension.isEmpty() || PlayerInstanceHolder.INSTANCE.mapToCurrentWindowIndex(srcUri) == C.INDEX_UNSET);
     }
 
     public void setRepeatModifier(boolean repeat) {
@@ -1023,10 +1023,12 @@ class ReactExoplayerView extends FrameLayout implements
     }
 
     public void seekTo(long positionMs) {
-        if (PLAYER_TYPE_SPEAK_EASY.equals(extension)) setPlayWhenReady(true);
-        if (player != null && PlayerInstanceHolder.INSTANCE.mapToCurrentWindowIndex(srcUri) == player.getCurrentWindowIndex()) {
+
+        int  playingIndex = PlayerInstanceHolder.INSTANCE.mapToCurrentWindowIndex(srcUri);
+        if (player != null && (!extension.isEmpty() || playingIndex == C.INDEX_UNSET || playingIndex == player.getCurrentWindowIndex() )) {
             seekTime = positionMs;
             player.seekTo(positionMs);
+            if (PLAYER_TYPE_SPEAK_EASY.equals(extension)) setPlayWhenReady(true);
         } else {
             resumePosition = positionMs;
         }
