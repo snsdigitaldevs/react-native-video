@@ -165,6 +165,12 @@ object PlayerInstanceHolder {
         }
     }
 
+    fun pausePlayer() {
+        simpleExoPlayer?.apply {
+            if (isPlaying) playWhenReady = false
+        }
+    }
+
     private fun buildMediaSource(mediaDataSourceFactory: DataSource.Factory, uri: Uri?) =
         ProgressiveMediaSource.Factory(mediaDataSourceFactory)
             .createMediaSource(uri)
