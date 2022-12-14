@@ -57,7 +57,6 @@ import com.google.android.exoplayer2.util.Util;
 import java.net.CookieHandler;
 import java.net.CookieManager;
 import java.net.CookiePolicy;
-import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 
@@ -133,6 +132,7 @@ class ReactExoplayerView extends FrameLayout implements
     private final WifiLockManager wifiLockManager;
 
     private static final String PLAYER_TYPE_SPEAK_EASY = "SpeakEasy";
+    public static final String PLAYER_TYPE_PAGE_REEADING = "PageReading";
 
     private final Handler progressHandler = new Handler(new Handler.Callback() {
         @Override
@@ -378,6 +378,7 @@ class ReactExoplayerView extends FrameLayout implements
                     PlayerInstanceHolder.INSTANCE.switchToOtherResource(true);
                     player.setRepeatMode(Player.REPEAT_MODE_OFF);
                     player.prepare(buildMediaSource(srcUri, ""));
+                    if (!extension.equals(PLAYER_TYPE_PAGE_REEADING)) player.setPlayWhenReady(true);
                     isRePrepareSource = true;
                 }  else {
                     if (PlayerInstanceHolder.INSTANCE.isSwitchOtherSource() ||
@@ -492,14 +493,21 @@ class ReactExoplayerView extends FrameLayout implements
     @Override
     protected void onDetachedFromWindow() {
         super.onDetachedFromWindow();
-        Log.i(TAG, "onDetachedFromWindow");
+        Log.w(TAG, "onDetachedFromWindow: extension" + extension);
         stopPlayback();
-        if (isPlayOtherSource()) pausePlayback();
+        if (isPlayOtherSource() ) {
+            pausePlayback();
+            resetResource();
+        }
     }
 
     private void stopPlayback() {
         onStopPlayback();
         removeCurrentViewListener();
+    }
+
+    private void resetResource() {
+        if (player != null) player.stop(true);
     }
 
     private void onStopPlayback() {
@@ -1027,7 +1035,12 @@ class ReactExoplayerView extends FrameLayout implements
         int  playingIndex = PlayerInstanceHolder.INSTANCE.mapToCurrentWindowIndex(srcUri);
         if (player != null && (!extension.isEmpty() || playingIndex == C.INDEX_UNSET || playingIndex == player.getCurrentWindowIndex() )) {
             seekTime = positionMs;
+            if (player.getPlaybackState() == Player.STATE_IDLE && extension.equals(PLAYER_TYPE_PAGE_REEADING)) {
+                player.prepare(buildMediaSource(srcUri, ""));
+                player.setPlayWhenReady(true);
+            }
             player.seekTo(positionMs);
+            Log.i(TAG, "execute seek:" + positionMs);
             if (PLAYER_TYPE_SPEAK_EASY.equals(extension)) setPlayWhenReady(true);
         } else {
             resumePosition = positionMs;
