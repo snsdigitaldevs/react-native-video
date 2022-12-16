@@ -518,7 +518,7 @@ public class MusicControlModule extends ReactContextBaseJavaModule implements Co
 
                 Log.e(TAG, "Control resources are being removed due to system's low memory (Level: " + level + ")");
 
-                destroy();
+//                destroy();
                 break;
         }
     }

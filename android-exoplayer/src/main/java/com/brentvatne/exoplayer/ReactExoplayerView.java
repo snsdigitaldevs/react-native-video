@@ -495,14 +495,10 @@ class ReactExoplayerView extends FrameLayout implements
         super.onDetachedFromWindow();
         Log.w(TAG, "onDetachedFromWindow: extension" + extension);
         stopPlayback();
-        if (isPlayOtherSource() && !isPlayHintSound()) {
+        if (isPlayOtherSource() && PlayerInstanceHolder.INSTANCE.isSwitchOtherSource()) {
             pausePlayback();
             resetResource();
         }
-    }
-
-    private boolean isPlayHintSound() {
-        return srcUri.toString().contains("rawresource") || srcUri.toString().contains("Hint.m4a") ;
     }
 
     private void stopPlayback() {
