@@ -3,11 +3,14 @@ package com.brentvatne.exoplayer;
 import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.content.Context;
+import android.content.Intent;
 import android.net.Uri;
 import android.os.Handler;
 import android.os.Message;
+import android.support.v4.media.session.PlaybackStateCompat;
 import android.text.TextUtils;
 import android.util.Log;
+import android.view.KeyEvent;
 import android.view.View;
 import android.view.Window;
 import android.view.accessibility.CaptioningManager;
@@ -15,6 +18,8 @@ import android.widget.FrameLayout;
 
 import androidx.annotation.NonNull;
 
+import com.brentvatne.lockscreen.MusicControlNotification;
+import com.brentvatne.lockscreen.Utils;
 import com.brentvatne.react.R;
 import com.brentvatne.receiver.AudioBecomingNoisyReceiver;
 import com.brentvatne.receiver.BecomingNoisyListener;
@@ -29,6 +34,7 @@ import com.google.android.exoplayer2.C;
 import com.google.android.exoplayer2.ExoPlaybackException;
 import com.google.android.exoplayer2.ExoPlayer;
 import com.google.android.exoplayer2.Format;
+import com.google.android.exoplayer2.MediaItem;
 import com.google.android.exoplayer2.PlaybackParameters;
 import com.google.android.exoplayer2.Player;
 import com.google.android.exoplayer2.SimpleExoPlayer;
@@ -377,7 +383,8 @@ class ReactExoplayerView extends FrameLayout implements
                 if (resumeWindow < 0 || isPlayOtherSource()) {
                     PlayerInstanceHolder.INSTANCE.switchToOtherResource(true);
                     player.setRepeatMode(Player.REPEAT_MODE_OFF);
-                    player.prepare(buildMediaSource(srcUri, ""));
+                    player.setMediaSource(buildMediaSource(srcUri, ""));
+                    player.prepare();
                     if (!extension.equals(PLAYER_TYPE_PAGE_REEADING)) player.setPlayWhenReady(true);
                     isRePrepareSource = true;
                 }  else {
@@ -417,18 +424,18 @@ class ReactExoplayerView extends FrameLayout implements
             case C.TYPE_SS:
                 return new SsMediaSource.Factory(new DefaultSsChunkSource.Factory(mediaDataSourceFactory), buildDataSourceFactory(false))
                         .setLoadErrorHandlingPolicy(new DefaultLoadErrorHandlingPolicy(minLoadRetryCount))
-                        .createMediaSource(uri);
+                        .createMediaSource(MediaItem.fromUri(uri));
             case C.TYPE_DASH:
                 return new DashMediaSource.Factory(new DefaultDashChunkSource.Factory(mediaDataSourceFactory), buildDataSourceFactory(false))
                         .setLoadErrorHandlingPolicy(new DefaultLoadErrorHandlingPolicy(minLoadRetryCount))
-                        .createMediaSource(uri);
+                        .createMediaSource(MediaItem.fromUri(uri));
             case C.TYPE_HLS:
                 return new HlsMediaSource.Factory(mediaDataSourceFactory)
                         .setLoadErrorHandlingPolicy(new DefaultLoadErrorHandlingPolicy(minLoadRetryCount))
-                        .createMediaSource(uri);
+                        .createMediaSource(MediaItem.fromUri(uri));
             case C.TYPE_OTHER:
                 return new ProgressiveMediaSource.Factory(mediaDataSourceFactory)
-                        .createMediaSource(uri);
+                        .createMediaSource(MediaItem.fromUri(uri));
             default: {
                 throw new IllegalStateException("Unsupported type: " + type);
             }
@@ -544,15 +551,25 @@ class ReactExoplayerView extends FrameLayout implements
         eventEmitter.audioBecomingNoisy();
     }
 
-    // ExoPlayer.EventListener implementation
 
     @Override
-    public void onLoadingChanged(boolean isLoading) {
-        // Do nothing.
+    public void onPlayWhenReadyChanged(boolean playWhenReady, int reason) {
+       if (!playWhenReady && reason == Player.PLAY_WHEN_READY_CHANGE_REASON_AUDIO_FOCUS_LOSS) {
+           sendMediaButtonBroadcast(PlaybackStateCompat.ACTION_PAUSE);
+       }
+    }
+
+    private void sendMediaButtonBroadcast(long action) {
+        int keyCode = Utils.toKeyCode(action);
+        Intent intent = new Intent(MusicControlNotification.MEDIA_BUTTON);
+        intent.putExtra(Intent.EXTRA_KEY_EVENT, new KeyEvent(KeyEvent.ACTION_DOWN, keyCode));
+        intent.putExtra(MusicControlNotification.PACKAGE_NAME, themedReactContext.getPackageName());
+        themedReactContext.sendBroadcast(intent);
     }
 
     @Override
-    public void onPlayerStateChanged(boolean playWhenReady, int playbackState) {
+    public void onPlaybackStateChanged(int playbackState) {
+        boolean playWhenReady = player.getPlayWhenReady();
         String text = "onStateChanged: playWhenReady=" + playWhenReady + ", playbackState=";
         updateWakeAndWifiLock(playWhenReady && (playbackState == Player.STATE_READY || playbackState == Player.STATE_BUFFERING));
         switch (playbackState) {
@@ -798,7 +815,10 @@ class ReactExoplayerView extends FrameLayout implements
         if (uri != null) {
             if ( PlayerInstanceHolder.INSTANCE.updateMediaItemToLocalUrl(uri)) {
                 PlayerInstanceHolder.INSTANCE.convertToExoplayerDataSource(themedReactContext);
-                if (player != null) player.prepare(PlayerInstanceHolder.INSTANCE.getMediaSourceList());
+                if (player != null) {
+                    player.setMediaSource(PlayerInstanceHolder.INSTANCE.getMediaSourceList());
+                    player.prepare();
+                }
             }
             boolean isSourceEqual = uri.equals(srcUri);
 
@@ -1036,7 +1056,8 @@ class ReactExoplayerView extends FrameLayout implements
         if (player != null && (!extension.isEmpty() || playingIndex == C.INDEX_UNSET || playingIndex == player.getCurrentWindowIndex() )) {
             seekTime = positionMs;
             if (player.getPlaybackState() == Player.STATE_IDLE && extension.equals(PLAYER_TYPE_PAGE_REEADING)) {
-                player.prepare(buildMediaSource(srcUri, ""));
+                player.setMediaSource(buildMediaSource(srcUri, ""));
+                player.prepare();
                 player.setPlayWhenReady(true);
             }
             player.seekTo(positionMs);

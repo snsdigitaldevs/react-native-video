@@ -98,11 +98,11 @@ class TransferDataSource implements DataSource {
                 context,
                 new DefaultHttpDataSource(
                         userAgent,
-                        /* contentTypePredicate= */ null,
                         connectTimeoutMillis,
                         readTimeoutMillis,
                         allowCrossProtocolRedirects,
-                        /* defaultRequestProperties= */ null));
+                        null
+                ));
     }
 
     /**

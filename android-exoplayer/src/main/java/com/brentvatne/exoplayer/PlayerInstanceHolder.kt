@@ -173,7 +173,7 @@ object PlayerInstanceHolder {
 
     private fun buildMediaSource(mediaDataSourceFactory: DataSource.Factory, uri: Uri?) =
         ProgressiveMediaSource.Factory(mediaDataSourceFactory)
-            .createMediaSource(uri)
+            .createMediaSource(com.google.android.exoplayer2.MediaItem.fromUri(uri!!))
 
     fun releasePlayer() {
         stopPlayer(true)
