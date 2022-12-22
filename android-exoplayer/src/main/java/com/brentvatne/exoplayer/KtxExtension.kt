@@ -5,7 +5,7 @@ import android.support.v4.media.MediaDescriptionCompat
 
 fun Uri?.fileName(): String? = this?.pathSegments?.last()
 
-fun Uri?.fileNameWithoutExtension(): String? = this?.pathSegments?.last()?.split(".")?.first()
+fun Uri?.fileNameWithoutExtension(): String? =  this?.run { (lastPathSegment ?: toString()).split(".").first() }
 
 inline val Uri?.isLocalUrl : Boolean
    get() = this?.run { scheme == null || scheme == "file" } ?: false
