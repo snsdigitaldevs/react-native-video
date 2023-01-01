@@ -167,7 +167,11 @@ object PlayerInstanceHolder {
 
     fun pausePlayer() {
         simpleExoPlayer?.apply {
-            if (isPlaying) playWhenReady = false
+            try {
+                if (isPlaying) playWhenReady = false
+            } catch (exception: IllegalStateException) {
+                Log.e(this.javaClass.simpleName, exception.toString())
+            }
         }
     }
 
