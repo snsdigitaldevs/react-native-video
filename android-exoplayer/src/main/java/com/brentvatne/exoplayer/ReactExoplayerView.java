@@ -355,7 +355,7 @@ class ReactExoplayerView extends FrameLayout implements
         ReactExoplayerView self = this;
         // This ensures all props have been setted, to avoid async racing conditions.
         new Handler().postDelayed(() -> {
-            if (player == null) {
+//            if (player == null) {
                 player = PlayerInstanceHolder.INSTANCE.getPlayer(getContext());
                 trackSelector = PlayerInstanceHolder.INSTANCE.getTrackSelector();
                 player.addListener(self);
@@ -369,7 +369,7 @@ class ReactExoplayerView extends FrameLayout implements
                 playerNeedsSource = true;
                 PlaybackParameters params = new PlaybackParameters(rate, 1f);
                 player.setPlaybackParameters(params);
-            }
+//            }
 
             if (playerNeedsSource && srcUri != null) {
                 if (PlayerInstanceHolder.INSTANCE.getMediaSourceList().getSize() <= 0) {
