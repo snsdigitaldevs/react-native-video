@@ -450,6 +450,7 @@ class ReactExoplayerView extends FrameLayout implements
         progressHandler.removeMessages(SHOW_PROGRESS);
         themedReactContext.removeLifecycleEventListener(this);
         audioBecomingNoisyReceiver.removeListener();
+        PlayerInstanceHolder.INSTANCE.getPlayer(getContext()).removeListener(this);
         if (PlayerInstanceHolder.INSTANCE.getBandwidthMeter() != null) {
             PlayerInstanceHolder.INSTANCE.getBandwidthMeter().removeEventListener(this);
         }
