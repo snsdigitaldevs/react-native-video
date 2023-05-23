@@ -2,7 +2,6 @@
 package com.brentvatne.encrypt;
 
 import android.net.Uri;
-import android.util.Log;
 import androidx.annotation.Nullable;
 import com.google.android.exoplayer2.C;
 import com.google.android.exoplayer2.upstream.BaseDataSource;
@@ -74,11 +73,11 @@ final class AesDataSource extends BaseDataSource {
             if (totalBytesRemaining < 0) {
                 throw new EOFException();
             }
-        } catch (NoSuchPaddingException | NoSuchAlgorithmException | InvalidKeyException | InvalidAlgorithmParameterException | IOException e) {
+        } catch (NoSuchPaddingException | NoSuchAlgorithmException | InvalidKeyException |
+                 InvalidAlgorithmParameterException | IOException e) {
             e.printStackTrace();
             throw new FileDataSourceException(e.getMessage(), e);
         }
-
         opened = true;
         transferStarted(dataSpec);
         return totalBytesRemaining;
@@ -126,18 +125,18 @@ final class AesDataSource extends BaseDataSource {
     public int read(byte[] buffer, int offset, int readLength) throws FileDataSourceException {
         if (readLength == 0 || file == null) {
             return 0;
-        } else if (totalBytesRemaining == 0) {
+        } else if (totalBytesRemaining <= 0) {
             return C.RESULT_END_OF_INPUT;
         } else {
+            int readFromFileLength;
+            int realReadLength;
             //从已解密数据中获取
             if (currentRemainingData != null && currentRemainingData.remainingCount() >= readLength) {
-                currentRemainingData.readData(buffer, offset, readLength);
-                internalByteTransferred(readLength);
-                return readLength;
+                realReadLength = (int) Math.min(readLength, totalBytesRemaining);
+                currentRemainingData.readData(buffer, offset, realReadLength);
+                internalByteTransferred(realReadLength);
+                return realReadLength;
             }
-
-            int readFromFileLength;
-            int realReadFromDataKeeper;
             try {
                 int readLengthInChunkSize = (readLength / PER_CHUNK_SIZE + 1) * PER_CHUNK_SIZE;
                 //是否是最后的数据
@@ -160,13 +159,13 @@ final class AesDataSource extends BaseDataSource {
                 } else {
                     currentRemainingData.appendChunk(decryptBytes);
                 }
-                realReadFromDataKeeper = Math.min(readLength, readFromFileLength);
-                currentRemainingData.readData(buffer, offset, realReadFromDataKeeper);
+                realReadLength = Math.min(readLength, readFromFileLength);
+                currentRemainingData.readData(buffer, offset, realReadLength);
             } catch (IOException | ShortBufferException | IllegalBlockSizeException | BadPaddingException e) {
                 throw new FileDataSourceException(e.getMessage(), e);
             }
-            internalByteTransferred(realReadFromDataKeeper);
-            return realReadFromDataKeeper;
+            internalByteTransferred(realReadLength);
+            return realReadLength;
         }
     }
 
