@@ -6,6 +6,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.net.Uri;
 import android.os.Handler;
+import android.os.Looper;
 import android.os.Message;
 import android.support.v4.media.session.PlaybackStateCompat;
 import android.text.TextUtils;
@@ -354,7 +355,7 @@ class ReactExoplayerView extends FrameLayout implements
     private void initializePlayer() {
         ReactExoplayerView self = this;
         // This ensures all props have been setted, to avoid async racing conditions.
-        new Handler().postDelayed(() -> {
+        new Handler(Looper.getMainLooper()).postDelayed(() -> {
 //            if (player == null) {
                 player = PlayerInstanceHolder.INSTANCE.getPlayer(getContext());
                 trackSelector = PlayerInstanceHolder.INSTANCE.getTrackSelector();
