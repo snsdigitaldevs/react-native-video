@@ -9,7 +9,6 @@ import android.content.res.Resources;
 import android.os.Build;
 import android.os.IBinder;
 import android.support.v4.media.session.PlaybackStateCompat;
-import android.util.Log;
 import android.view.KeyEvent;
 
 import androidx.core.app.NotificationCompat;
@@ -111,21 +110,26 @@ public class MusicControlNotification {
         String packageName = context.getPackageName();
         Intent openApp = context.getPackageManager().getLaunchIntentForPackage(packageName);
         if (openApp != null) {
-            int flag = Build.VERSION.SDK_INT >= Build.VERSION_CODES.M ? (PendingIntent.FLAG_IMMUTABLE | PendingIntent.FLAG_ONE_SHOT) : PendingIntent.FLAG_ONE_SHOT;
+            int flag = PendingIntent.FLAG_IMMUTABLE | PendingIntent.FLAG_ONE_SHOT;
             builder.setContentIntent(PendingIntent.getActivity(context, 0, openApp, flag));
         }
         // Remove notification
         Intent remove = new Intent(REMOVE_NOTIFICATION);
         remove.putExtra(PACKAGE_NAME, context.getApplicationInfo().packageName);
-        int flag = Build.VERSION.SDK_INT >= Build.VERSION_CODES.M ? (PendingIntent.FLAG_IMMUTABLE | PendingIntent.FLAG_UPDATE_CURRENT) : PendingIntent.FLAG_UPDATE_CURRENT;
+        int flag = PendingIntent.FLAG_IMMUTABLE | PendingIntent.FLAG_UPDATE_CURRENT;
         builder.setDeleteIntent(PendingIntent.getBroadcast(context, 0, remove, flag));
 
-        return builder.build();
+        Notification notification = null;
+        try {
+            notification = builder.build();
+        } catch (IllegalArgumentException ignore) {
+            // builder.build may throw IllegalArgumentException in Android 6.0
+        }
+        return notification;
     }
 
     public synchronized void show(NotificationCompat.Builder builder, boolean isPlaying) {
-        Notification notification = prepareNotification(builder, isPlaying);
-        Log.d(TAG, "notification=" + notification);
+        Notification notification  = prepareNotification(builder, isPlaying);
         if (notification != null) {
             NotificationManagerCompat.from(context).notify(NOTIFICATION_ID, notification);
         }

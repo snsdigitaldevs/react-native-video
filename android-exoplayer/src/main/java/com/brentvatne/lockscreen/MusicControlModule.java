@@ -38,7 +38,6 @@ import com.facebook.react.bridge.ReadableMap;
 import com.facebook.react.bridge.ReadableType;
 
 import java.util.HashMap;
-import java.util.Locale;
 import java.util.Map;
 
 import javax.annotation.Nullable;
@@ -113,8 +112,7 @@ public class MusicControlModule extends ReactContextBaseJavaModule implements Co
     }
 
     private void updateNotificationMediaStyle() {
-        if ((Build.MANUFACTURER.toLowerCase(Locale.getDefault()).contains("huawei")
-                && Build.VERSION.SDK_INT < Build.VERSION_CODES.M) || nb == null) {
+        if (nb == null) {
             return;
         }
         MediaStyle style = new MediaStyle();
