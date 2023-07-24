@@ -138,8 +138,10 @@ class ReactExoplayerView extends FrameLayout implements
     private final WakeLockManager wakeLockManager;
     private final WifiLockManager wifiLockManager;
 
+    // TODO: need to remove these types, and use isPaused to control audio play/pause when ready.
     private static final String PLAYER_TYPE_SPEAK_EASY = "SpeakEasy";
-    public static final String PLAYER_TYPE_PAGE_REEADING = "PageReading";
+    private static final String PLAYER_TYPE_PAGE_READING = "PageReading";
+    private static final String PLAYER_TYPE_MINI_LESSON = "MiniLesson";
 
     private final Handler progressHandler = new Handler(new Handler.Callback() {
         @Override
@@ -386,7 +388,9 @@ class ReactExoplayerView extends FrameLayout implements
                     player.setRepeatMode(Player.REPEAT_MODE_OFF);
                     player.setMediaSource(buildMediaSource(srcUri, ""));
                     player.prepare();
-                    if (!extension.equals(PLAYER_TYPE_PAGE_REEADING)) player.setPlayWhenReady(true);
+                    if (!extension.equals(PLAYER_TYPE_PAGE_READING) && !extension.equals(PLAYER_TYPE_MINI_LESSON)) {
+                        player.setPlayWhenReady(true);
+                    }
                     isRePrepareSource = true;
                 }  else {
                     if (PlayerInstanceHolder.INSTANCE.isSwitchOtherSource() ||
@@ -1057,7 +1061,7 @@ class ReactExoplayerView extends FrameLayout implements
         int  playingIndex = PlayerInstanceHolder.INSTANCE.mapToCurrentWindowIndex(srcUri);
         if (player != null && (!extension.isEmpty() || playingIndex == C.INDEX_UNSET || playingIndex == player.getCurrentWindowIndex() )) {
             seekTime = positionMs;
-            if (player.getPlaybackState() == Player.STATE_IDLE && extension.equals(PLAYER_TYPE_PAGE_REEADING)) {
+            if (player.getPlaybackState() == Player.STATE_IDLE && extension.equals(PLAYER_TYPE_PAGE_READING)) {
                 player.setMediaSource(buildMediaSource(srcUri, ""));
                 player.prepare();
                 player.setPlayWhenReady(true);
