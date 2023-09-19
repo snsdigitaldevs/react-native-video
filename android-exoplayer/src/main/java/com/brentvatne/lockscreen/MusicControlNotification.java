@@ -110,7 +110,7 @@ public class MusicControlNotification {
         String packageName = context.getPackageName();
         Intent openApp = context.getPackageManager().getLaunchIntentForPackage(packageName);
         if (openApp != null) {
-            int flag = PendingIntent.FLAG_IMMUTABLE | PendingIntent.FLAG_ONE_SHOT;
+            int flag = PendingIntent.FLAG_IMMUTABLE | PendingIntent.FLAG_UPDATE_CURRENT;
             builder.setContentIntent(PendingIntent.getActivity(context, 0, openApp, flag));
         }
         // Remove notification
