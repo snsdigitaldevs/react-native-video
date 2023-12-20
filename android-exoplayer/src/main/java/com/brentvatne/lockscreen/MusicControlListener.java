@@ -58,23 +58,6 @@ public class MusicControlListener extends MediaSessionCompat.Callback {
         sendEvent(context, "play", null);
     }
 
-    @Override
-    public boolean onMediaButtonEvent(Intent mediaButtonEvent) {
-        // dumpIntent(mediaButtonEvent);
-        String intentAction = mediaButtonEvent.getAction();
-        if (Intent.ACTION_MEDIA_BUTTON.equals(intentAction)) {
-            KeyEvent event = mediaButtonEvent.getParcelableExtra(Intent.EXTRA_KEY_EVENT);
-            if (event != null && KeyEvent.ACTION_UP == event.getAction()) {
-                if (KeyEvent.KEYCODE_MEDIA_PREVIOUS == event.getKeyCode()) {
-                    sendEvent(context, "skipBackward", null);
-                } else if (KeyEvent.KEYCODE_MEDIA_NEXT == event.getKeyCode()) {
-                    sendEvent(context, "skipForward", null);
-                }
-            }
-        }
-        return super.onMediaButtonEvent(mediaButtonEvent);
-    }
-
     private void dumpIntent(Intent i) {
         Bundle bundle = i.getExtras();
         if (bundle != null) {
