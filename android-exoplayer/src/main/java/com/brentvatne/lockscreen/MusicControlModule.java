@@ -255,6 +255,9 @@ public class MusicControlModule extends ReactContextBaseJavaModule implements Co
 
     @ReactMethod
     synchronized public void setNowPlaying(ReadableMap metadata) {
+        if (metadata == null) {
+          return;
+        }
         init();
 
         String title = metadata.hasKey("title") ? metadata.getString("title") : null;
@@ -343,7 +346,7 @@ public class MusicControlModule extends ReactContextBaseJavaModule implements Co
 
     @ReactMethod
     synchronized public void updatePlayback(ReadableMap info) {
-        if (state == null || volume == null || pb == null || session == null || notification == null || nb == null) {
+        if (state == null || volume == null || pb == null || session == null || notification == null || nb == null || info == null) {
             Log.e(TAG, "updatePlayback did not work, somethingwrong..");
             dump();
             return;
@@ -405,7 +408,7 @@ public class MusicControlModule extends ReactContextBaseJavaModule implements Co
 
     @ReactMethod
     synchronized public void enableControl(String control, boolean enable, ReadableMap options) {
-        if (session == null || notification == null || pb == null) {
+        if (session == null || notification == null || pb == null || options == null) {
             Log.e(TAG, "enableControl after stop, return..");
             dump();
             return;
