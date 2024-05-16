@@ -1367,8 +1367,7 @@ static int const RCTVideoUnset = -1;
 {
   _progressUpdateInterval = progressUpdateInterval;
   
-  if (_timeObserver) {
-    [self removePlayerTimeObserver];
+  if (!_timeObserver) {
     [self addPlayerTimeObserver];
   }
 }
