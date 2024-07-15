@@ -5,6 +5,7 @@ import android.app.Notification;
 import android.app.PendingIntent;
 import android.app.Service;
 import android.content.Intent;
+import android.content.pm.ServiceInfo;
 import android.content.res.Resources;
 import android.os.Build;
 import android.os.IBinder;
@@ -156,8 +157,7 @@ public class MusicControlNotification {
         Intent intent = new Intent(MEDIA_BUTTON);
         intent.putExtra(Intent.EXTRA_KEY_EVENT, new KeyEvent(KeyEvent.ACTION_DOWN, keyCode));
         intent.putExtra(PACKAGE_NAME, packageName);
-        int flag = Build.VERSION.SDK_INT >= Build.VERSION_CODES.M ? (PendingIntent.FLAG_IMMUTABLE | PendingIntent.FLAG_UPDATE_CURRENT) : PendingIntent.FLAG_UPDATE_CURRENT;
-        PendingIntent i = PendingIntent.getBroadcast(context, keyCode, intent, flag);
+        PendingIntent i = PendingIntent.getBroadcast(context, keyCode, intent, PendingIntent.FLAG_IMMUTABLE | PendingIntent.FLAG_UPDATE_CURRENT);
 
         return new NotificationCompat.Action(icon, title, i);
     }
@@ -194,11 +194,16 @@ public class MusicControlNotification {
             stopForeground(true);
         }
 
+        @SuppressLint("ForegroundServiceType")
         private void startForegroundService() {
             if (MusicControlModule.INSTANCE != null && MusicControlModule.INSTANCE.notification != null) {
                 Notification notification = MusicControlModule.INSTANCE.notification.prepareNotification(MusicControlModule.INSTANCE.nb, false);
                 if (notification != null) {
-                    startForeground(NOTIFICATION_ID, notification);
+                    if (Build.VERSION.SDK_INT >= 34) {
+                        startForeground(NOTIFICATION_ID, notification, ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PLAYBACK);
+                    } else {
+                        startForeground(NOTIFICATION_ID, notification);
+                    }
                 }
             }
         }
