@@ -193,7 +193,7 @@ public class MusicControlModule extends ReactContextBaseJavaModule implements Co
             filter.addAction(AudioManager.ACTION_AUDIO_BECOMING_NOISY);
             receiver = new MusicControlReceiver(this, context);
             if (Build.VERSION.SDK_INT >= 34) {
-                context.registerReceiver(receiver, filter, Context.RECEIVER_NOT_EXPORTED);
+                context.registerReceiver(receiver, filter, Context.RECEIVER_EXPORTED);
             } else {
                 context.registerReceiver(receiver, filter);
             }
