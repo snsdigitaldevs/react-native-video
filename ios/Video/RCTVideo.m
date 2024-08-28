@@ -1366,10 +1366,8 @@ static int const RCTVideoUnset = -1;
 - (void)setProgressUpdateInterval:(float)progressUpdateInterval
 {
   _progressUpdateInterval = progressUpdateInterval;
-  
-  if (!_timeObserver) {
-    [self addPlayerTimeObserver];
-  }
+  [self removePlayerTimeObserver];
+  [self addPlayerTimeObserver];
 }
 
 - (void)removePlayerLayer
