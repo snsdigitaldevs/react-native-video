@@ -278,7 +278,7 @@ static int const RCTVideoUnset = -1;
 - (void)sendProgressUpdate
 {
   AVPlayerItem *video = [_player currentItem];
-  if (video == nil || video.status != AVPlayerItemStatusReadyToPlay) {
+  if (video == nil || video.status != AVPlayerItemStatusReadyToPlay  || _paused) {
     return;
   }
   
