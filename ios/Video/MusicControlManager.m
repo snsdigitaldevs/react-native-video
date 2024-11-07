@@ -83,7 +83,7 @@ RCT_EXPORT_METHOD(updatePlayback:(NSDictionary *) originalDetails)
 
     // Set the playback rate from the state if no speed has been defined
     // If they provide the speed, then use it
-    if (state != nil && [details objectForKey:MEDIA_SPEED] == nil) {
+    if (state != nil) {
         NSNumber *speed = [state isEqual:MEDIA_STATE_PAUSED]
         ? [NSNumber numberWithDouble:0]
         : [NSNumber numberWithDouble:1];
