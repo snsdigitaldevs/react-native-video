@@ -734,6 +734,10 @@ static int const RCTVideoUnset = -1;
                                     @"domain": _playerItem.error.domain},
                         @"target": self.reactTag});
   }
+  
+  if (_eventDispatcher != nil) {
+    [_eventDispatcher sendDeviceEventWithName:@"RCTVideoLog" body:[NSString stringWithFormat:@"PlayerStateChanged, status = %d errorDomain = %@, errorCode = %d", _playerItem.status, _playerItem.error.domain, _playerItem.error.code]];
+  }
 }
 
 - (void)attachListeners

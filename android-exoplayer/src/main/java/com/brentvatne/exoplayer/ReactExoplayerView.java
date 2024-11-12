@@ -30,6 +30,7 @@ import com.facebook.react.bridge.LifecycleEventListener;
 import com.facebook.react.bridge.ReadableArray;
 import com.facebook.react.bridge.WritableArray;
 import com.facebook.react.bridge.WritableMap;
+import com.facebook.react.modules.core.DeviceEventManagerModule.RCTDeviceEventEmitter;
 import com.facebook.react.uimanager.ThemedReactContext;
 import com.google.android.exoplayer2.C;
 import com.google.android.exoplayer2.ExoPlaybackException;
@@ -784,6 +785,27 @@ class ReactExoplayerView extends FrameLayout implements
         } else {
             updateResumePosition();
         }
+
+        StringBuilder logBuilder = new StringBuilder();
+        logBuilder.append("Type = ").append(e.type).append(", ").append("message = ");
+        switch (e.type) {
+            case ExoPlaybackException.TYPE_SOURCE:
+            logBuilder.append(e.getSourceException().getMessage());
+            break;
+            case ExoPlaybackException.TYPE_RENDERER:
+            logBuilder.append(e.getRendererException().getMessage());
+            break;
+            case ExoPlaybackException.TYPE_TIMEOUT:
+            logBuilder.append(e.getTimeoutException().getMessage());
+            break;
+            case ExoPlaybackException.TYPE_UNEXPECTED:
+            logBuilder.append(e.getUnexpectedException().getMessage());
+            break;
+            default:
+            logBuilder.append("null");
+            break;
+        }
+        themedReactContext.getJSModule(RCTDeviceEventEmitter.class).emit("RCTVideoLog", logBuilder.toString());
     }
 
     private static boolean isBehindLiveWindow(ExoPlaybackException e) {
