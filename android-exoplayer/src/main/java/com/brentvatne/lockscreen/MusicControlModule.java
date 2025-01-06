@@ -372,6 +372,7 @@ public class MusicControlModule extends ReactContextBaseJavaModule implements Co
             updateTime = state.getLastPositionUpdateTime();
         }
 
+        session.setPlaybackState(state);
         pb.setState(pbState, elapsedTime, speed, updateTime);
         pb.setBufferedPosition(bufferedTime);
         pb.setActions(controls);
@@ -382,7 +383,6 @@ public class MusicControlModule extends ReactContextBaseJavaModule implements Co
         }
 
         state = pb.build();
-        session.setPlaybackState(state);
 
         updateNotificationMediaStyle();
 
@@ -489,11 +489,11 @@ public class MusicControlModule extends ReactContextBaseJavaModule implements Co
             controls &= ~controlValue;
         }
 
+        session.setPlaybackState(state);
         notification.updateActions(controls, skipOptions);
         pb.setActions(controls);
 
         state = pb.build();
-        session.setPlaybackState(state);
     }
 
     private void dump() {
