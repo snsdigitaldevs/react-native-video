@@ -73,6 +73,7 @@ public class MusicControlModule extends ReactContextBaseJavaModule implements Co
 
     public static final int NOTIFICATION_ID = 100;
 
+    private final Handler mainHandler = new Handler(Looper.getMainLooper());
     public MusicControlModule(ReactApplicationContext context) {
         super(context);
         this.context = context;
@@ -331,15 +332,22 @@ public class MusicControlModule extends ReactContextBaseJavaModule implements Co
             Bitmap bitmap = BitmapFactory.decodeResource(context.getResources(), R.drawable.pimsleuricon11);
             setupBitmap(bitmap);
         }
-
-        //session.setMetadata(md.build());
         session.setActive(true);
         notification.show(nb, isPlaying);
     }
 
-    private void setupBitmap(Bitmap bitmap) {
+    private void setupBitmap(final Bitmap bitmap) {
+        if (Looper.myLooper() == Looper.getMainLooper()) {
+            safeSetupBitmap(bitmap);
+        } else {
+            mainHandler.post(() -> safeSetupBitmap(bitmap));
+        }
+    }
+
+    private void safeSetupBitmap(Bitmap bitmap) {
         if (md != null) {
             md.putBitmap(MediaMetadataCompat.METADATA_KEY_ART, bitmap);
+            session.setMetadata(md.build());
         }
         if (nb != null && notification != null) {
             nb.setLargeIcon(bitmap);
